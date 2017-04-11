@@ -1,0 +1,90 @@
+*{
+	margin: 0;
+	padding: 0;
+	
+}
+
+// html{
+// 	width: 100%;
+// 	height: 100%;
+// }
+body{
+	font-family: "SimHei";
+	width: 100%;
+	height: 100%;
+	// text-align: center;
+}
+label{
+	font-size: 1.5em;
+	width: 400px;
+	display: block;
+	margin:30px auto 5px;
+}
+textarea{
+	// font-size: 1.5em;
+	display: block;
+	margin: 10px auto 5px;
+	width: 400px;
+	font-size: 1.5em;
+}
+#button{
+	// display: inline-block;
+	margin: 20px auto 5px;
+	width: 400px;
+	// height: 35em;
+	// vertical-align: top;
+	// outline:none;
+}
+.bt{
+	height: 1.5em;
+	font: 1.5em "SimHei";
+    border-radius: .2em;
+    margin-left:0.5em;
+    outline:none;
+}
+.search{
+	// display: inline-block;
+	width: 400px;
+	// height: 2.5em;
+	margin: 10px auto 15px;
+}
+#inputSelect{
+	display: inline-block;
+	line-height: 33px;
+	vertical-align: top;
+	font-size: 1.2em;
+}
+#select{
+	height: 60px;
+
+}
+.display{
+	
+	width: 1200px;
+	height: 60%;
+	margin: 0 auto;
+	// margin-left:20%;
+}
+ul{
+	display: flex;
+	display: -webkit-flex;
+	// float: left;
+	flex-flow:row wrap;
+	list-style: none;
+	margin:30px auto;
+	justify-content:center;
+	// width: 100%;
+}
+ul>li{
+	border: 1px solid #AAA;
+	// width: 2em;
+	height: 2em;
+	text-align: center;
+	padding: 5px 10px;
+	// font :2em "SimHei";
+	margin-right:20px;
+	background-color: #00ffff;
+	border-radius: 0.2em;
+	line-height: 2em;
+
+}
