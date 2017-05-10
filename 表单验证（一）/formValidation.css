@@ -1,0 +1,74 @@
+*{
+	margin: 0;
+	padding: 0;
+}
+body{
+	width: 80%;
+    margin: 100px auto 0;
+}
+form{
+	width: 500px;
+	margin: 100px auto;
+}
+
+.main{
+	width: 500px;
+	min-width: 300px;
+	text-align: center;
+
+}
+label{
+	font-size: 20px;
+	margin-right: 10px;
+}
+#input{
+	font-size: 20px;
+	height: 35px;
+	border-radius: 8px;
+	margin-right: 10px;
+    border: 2px solid #B5B5B5;
+    outline: none;
+}
+#bt-vali{
+	font-size: 20px;
+	border-radius: 8px;
+	width: 80px;
+	height: 38px;
+	background-color: #6495ED;
+	color: #fff;
+	outline: none;
+	border: none;
+}
+p{
+    margin-left: 120px;
+	margin-top: 10px;
+    text-align: left;
+	color: #B5B5B5;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
