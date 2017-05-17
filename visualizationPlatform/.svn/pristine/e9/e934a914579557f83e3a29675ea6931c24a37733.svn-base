@@ -1,0 +1,149 @@
+var warningValue;
+function reportInit(role) {
+	if (role == -1) {
+		$("ul.main-menu li:eq(13)").addClass("active");
+	} else {
+		$("ul.main-menu li:eq(8)").addClass("active");
+	}
+	$("#search").click();
+}
+function onSearch() {
+	$("#search").click(function() {
+		printWarningList("#warningList", "", {
+			"region" : "all_region"
+		}, 1, 10);
+	});
+	$("#export").click(function() {
+		downloadReport();
+	});
+}
+function initRegionSearch(onRegionSearch) {
+	$("#regionSearch").autocomplete({
+		autoFocus : true,
+		delay : 900,
+		minLength : 1,
+		max : 10,
+		source : function(request, response) {
+			ajaxUtil({
+				"region" : request.term + "%",
+			}, mainpath + "/re/searchRegion", function(_response) {
+				response(_response.list);
+			}, function(_response, reason) {
+			});
+		},
+		select : function(event, ui) {
+			var region = ui.item.value;
+			ui.item.value = ui.item.label;
+			// $("#regionSearch_regionName").val()
+			printWarningList("#warningList", "", {
+				"region" : region
+			}, 1, 10);
+		}
+	});
+}
+function downloadReport() {
+	var region = $("#regionSearch").val();
+	if (region != null && region.trim().length != 0) {
+
+	} else {
+		region = "all_region";
+	}
+	ajaxUtil({
+		"startTime" : getStartTime(),
+		"endTime" : getEndTime(),
+		"startPage" : 1,
+		"pageSize" : 20,
+		"regionMayDefault" : region
+	}, mainpath + "/re/downWarningReport", function(response) {
+		var url = response.url;
+		window.location.href = url;
+	}, function(response, reason) {
+	});
+}
+
+/** 日期格式转换函数* */
+Date.prototype.toCommonCase = function() {
+	var xYear = this.getYear();
+	xYear = xYear + 1900;
+
+	var xMonth = this.getMonth() + 1;
+	if (xMonth < 10) {
+		xMonth = "0" + xMonth;
+	}
+
+	var xDay = this.getDate();
+	if (xDay < 10) {
+		xDay = "0" + xDay;
+	}
+	return xYear + "-" + xMonth + "-" + xDay;
+}
+
+/** 打印告警报表* */
+function printWarningList(tableId, url, data, pageNo, pageSize) {
+	ajaxUtil(
+			{
+				"startTime" : getStartTime(),
+				"endTime" : getEndTime(),
+				"startPage" : pageNo,
+				"pageSize" : pageSize,
+				"regionMayDefault" : data.region
+			},
+			mainpath + "/re/warningReport",
+			function(response) {
+				console.log(response);
+				var waringReport = response.waringReport;
+				var totalCount = response.totalCount;
+				var province = response.province;
+				var city = response.city;
+				var startTime = response.startTime;
+				var comStartTime = new Date(startTime);
+				comStartTime = comStartTime.toCommonCase();
+				var endTime = response.endTime;
+				var comEndTime = new Date(endTime);
+				comEndTime = comEndTime.toCommonCase();
+				var table = $(tableId);
+				var caption = $("#caption");
+				var theHtml = "<thead>"
+						+ "<tr class='active'><th>区域</th><th>楼宇</th><th>楼层</th>"
+						+ "<th>故障天线</th><th>网络</th><th>信号强度(dBm)"
+						+ "</th><th>告警阈值(dBm)</th><th>处理状态</th><th>维护人手机号</th><th>故障时间</th></tr></thead>";
+				theHtml += "<tbody>";
+				var theCaption = "<thead>" + "<tr ><th> <th>省份:</th>" + "<th>"
+						+ province + "&nbsp;&nbsp;</th>" + "<th>市地:</th>"
+						+ "<th>" + city + "&nbsp;&nbsp;</th>"
+						+ "<th>开始时间:</th>" + "<th>" + comStartTime
+						+ "&nbsp;&nbsp;</th>" + "<th>结束时间:</th>" + "<th>"
+						+ comEndTime + "&nbsp;&nbsp;</th>" + "</tr></thead>";
+				caption.html(theCaption);
+				for (var i = 0; i < waringReport.length; i++) {
+					var faultTime = waringReport[i].faultTime;
+					var comFaultTime = new Date(faultTime);
+					comFaultTime = comFaultTime.toCommonCase();
+					if (waringReport[i].sendPhoneNumber == null) {
+						waringReport[i].sendPhoneNumber = "空";
+					}
+					theHtml += "<tr>";
+					theHtml += "<td>" + waringReport[i].region + "</td>";
+					theHtml += "<td>" + waringReport[i].name + "</td>";
+					theHtml += "<td>" + waringReport[i].floor + "</td>";
+					theHtml += "<td>" + waringReport[i].description + "</td>";
+					theHtml += "<td>" + waringReport[i].netWork + "</td>";
+					theHtml += "<td>" + waringReport[i].value + "</td>";
+					theHtml += "<td>" + waringReport[i].warningValue + "</td>";
+					theHtml += "<td>" + waringReport[i].isRead + "</td>";
+					theHtml += "<td>" + waringReport[i].sendPhoneNumber
+							+ "</td>";
+					theHtml += "<td>" + comFaultTime + "</td>";
+					theHtml += "</tr>";
+				}
+				theHtml += "</tbody>";
+				table.html(theHtml);
+				var totalPage = Math.ceil(totalCount / pageSize);
+				printPage(tableId, document.getElementById("paging"),
+						totalPage, url, data, pageNo, pageSize,
+						"printWarningList");
+				setIcRank();
+			}, function(response, reason) {
+			});
+
+}

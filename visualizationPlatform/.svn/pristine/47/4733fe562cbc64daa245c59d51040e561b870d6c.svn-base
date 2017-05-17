@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.CellAdminMapper">
+
+	<insert id="insertWorkParameter" parameterType="List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into workparameter
+			(province,city,network,ci,lac,isIndoor,freqChannel,cellNameEng,
+			cellNameCh,cellAddress,longitude,latitude,belonging,scene,converageType,region,wpcid,enodeb)
+			values
+			(#{item.province},#{item.city},#{item.network},#{item.ci},#{item.lac},#{item.isIndoor},
+			#{item.freqChannel},#{item.cellNameEng},#{item.cellNameCh},
+			#{item.cellAddress},#{item.longitude},#{item.latitude},
+			#{item.belonging},#{item.scene},#{item.converageType},
+			#{item.region}, #{item.wpcid}, #{item.enodeb})
+			on
+			DUPLICATE
+			key UPDATE
+			lac=#{item.lac},isIndoor=#{item.isIndoor},
+			freqChannel=#{item.freqChannel},cellNameEng=#{item.cellNameEng},cellNameCh=#{item.cellNameCh},
+			cellAddress=#{item.cellAddress},longitude=#{item.longitude},latitude=#{item.latitude},
+			belonging=#{item.belonging},scene=#{item.scene},converageType=#{item.converageType},
+			region=#{item.region},wpcid=#{item.wpcid},enodeb=#{item.enodeb}
+		</foreach>
+	</insert>
+
+	<insert id="insertSingleWorkParameter" parameterType="WorkParameter">
+
+		insert into
+		workparameter
+		(province,city,network,ci,lac,isIndoor,freqChannel,cellNameEng,
+		cellNameCh,cellAddress,longitude,latitude,belonging,scene,converageType,region,wpcid,enodeb)
+		values
+		(#{item.province},#{item.city},#{item.network},#{item.ci},#{item.lac},#{item.isIndoor},
+		#{item.freqChannel},#{item.cellNameEng},#{item.cellNameCh},
+		#{item.cellAddress},#{item.longitude},#{item.latitude},
+		#{item.belonging},#{item.scene},#{item.converageType},
+		#{item.region},#{item.wpcid},#{item.enodeb})
+		on
+		DUPLICATE
+		key UPDATE
+		lac=#{item.lac},isIndoor=#{item.isIndoor},
+		freqChannel=#{item.freqChannel},cellNameEng=#{item.cellNameEng},cellNameCh=#{item.cellNameCh},
+		cellAddress=#{item.cellAddress},longitude=#{item.longitude},latitude=#{item.latitude},
+		belonging=#{item.belonging},scene=#{item.scene},converageType=#{item.converageType},
+		region=#{item.region},wpcid=#{item.wpcid},enodeb=#{item.enodeb}
+	</insert>
+
+
+	<select id="selectWorkParameter" resultType="WorkParameter">
+		select
+		w.province,w.city,w.network,w.ci,w.wpCid,w.region,w.enodeb,
+		w.lac,w.isIndoor,w.freqChannel,w.cellNameEng,w.cellNameCh,w.cellAddress,w.longitude,w.latitude,
+		w.belonging,w.scene,w.converageType
+		from workparameter w
+		where
+		w.province=#{province} and w.city=#{city}
+		order by w.ci
+		limit
+		#{itemStart},#{offset}
+	</select>
+	<select id="selectWorkParameterWithCI" resultType="WorkParameter">
+		select
+		w.province,w.city,w.network,w.ci,w.wpCid,w.region,w.enodeb,
+		w.lac,w.isIndoor,w.freqChannel,w.cellNameEng,w.cellNameCh,w.cellAddress,w.longitude,w.latitude,
+		w.belonging,w.scene,w.converageType
+		from workparameter w
+		where
+		w.province=#{province} and w.city=#{city} and w.ci=#{ci} and
+		w.network=#{network}
+	</select>
+
+	<select id="selectTotalNumber" resultType="long">
+		select count(*) from
+		workparameter w where w.province=#{province} and
+		w.city=#{city}
+	</select>
+
+	<select id="selectProvince" resultType="String">
+		select name from
+		province
+		order by theIndex
+	</select>
+
+	<select id="selectCity" resultType="String">
+		select name from city where
+		pname=#{province}
+	</select>
+
+	<delete id="deleteWP">
+		delete from workparameter where city=#{city} and
+		province=#{province} and
+		ci=#{ci} and network=#{network}
+	</delete>
+
+
+</mapper>

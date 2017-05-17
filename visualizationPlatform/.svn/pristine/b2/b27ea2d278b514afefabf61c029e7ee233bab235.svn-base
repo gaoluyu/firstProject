@@ -1,0 +1,45 @@
+var mainpath, id;
+$(function() {
+	$("ul.main-menu li:eq(11)").addClass("active");
+});
+function init(_mainpath) {
+	mainpath = _mainpath;
+	id = sessionStorage.id;
+	printDetailMessage("#detailmessage", id);
+}
+function printDetailMessage(tableId, id) {
+	ajaxUtil({
+		"id" : id
+	}, mainpath + "/userAdmin/messageDetail", function(response) {
+		console.log(response.list);
+		var list = response.list;
+		var totalCount = list.length;
+		var startTime = list[0].startTime;
+		var endTime = list[0].endTime;
+		var province = list[0].province;
+		var city = list[0].city;
+		var region = list[0].region;
+		var name = list[0].name;
+		var floor = list[0].floor;
+		var description = list[0].description;
+		var position = list[0].position;
+		var operator = list[0].operator;
+		var netType = list[0].netType;
+		var cid = list[0].cid;
+		var floor = list[0].floor;
+		var x = list[0].x;
+		var y = list[0].y;
+		var value = list[0].value;
+		var table = $(tableId);
+		var theHtml = "<dt>告警地点:</dt><dd>" + province + "|" + city + "|"
+				+ region + "|" + name + "|" + floor + "层"+description+"</dd><br/>";
+		theHtml += "<dt>告警设备:</dt><dd>MAC地址(" + position + ")|室内坐标(" + x + ","
+				+ y + ")</dd><br/>";
+		theHtml += "<dt>小区类型:</dt><dd>" + operator + "|" + netType + "|小区CI("
+				+ cid + ")</dd><br/>";
+		theHtml += "<dt>告警场强:</dt><dd>" + value + "bpm</dd>";
+		table.html(theHtml);
+	}, function(response, reason) {
+		alert(reason);
+	});
+}

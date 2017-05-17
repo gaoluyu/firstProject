@@ -1,0 +1,337 @@
+var mainpath;
+var startTime;
+var endTime;
+
+/** 日期格式转换函数* */
+Date.prototype.toCommonCase = function() {
+	var xYear = this.getYear();
+	xYear = xYear + 1900;
+
+	var xMonth = this.getMonth() + 1;
+	if (xMonth < 10) {
+		xMonth = "0" + xMonth;
+	}
+
+	var xDay = this.getDate();
+	if (xDay < 10) {
+		xDay = "0" + xDay;
+	}
+	return xYear + "-" + xMonth + "-" + xDay;
+}
+function initTimePicker() {
+	$('#starttime').datetimepicker({
+		format : 'yyyy-mm-dd',
+		minView : 2,
+		autoclose : true
+	});
+	$('#endtime').datetimepicker({
+		format : 'yyyy-mm-dd',
+		minView : 2,
+		autoclose : true,
+	});
+	var currentDate = new Date();
+	var weekagoDate = new Date(currentDate.getTime() - 1000 * 24 * 60 * 60 * 7);
+	currentDate = currentDate.toCommonCase();
+	weekagoDate = weekagoDate.toCommonCase();
+	$('#starttime').attr("value", weekagoDate);
+	$('#endtime').attr("value", currentDate);
+	$('#starttime').datetimepicker().on('changeDate', function(ev) {
+		$('#endtime').datetimepicker('setStartDate', ev.date);
+		startTime = ev.date.valueOf();
+	});
+
+	$('#endtime').datetimepicker().on('changeDate', function(ev) {
+		endTime = ev.date.valueOf();
+		$('#starttime').datetimepicker('setEndDate', ev.date);
+	});
+	loadSessionData();
+}
+function getStartTime() {
+	if (startTime == null) {
+		var initTime = $('#starttime')[0].value;
+		initTime = (new Date(initTime)).getTime();
+		startTime = initTime;
+		return initTime;
+	}
+	return startTime;
+}
+function getEndTime() {
+	if (endTime == null) {
+		var initTime = $('#endtime')[0].value;
+		initTime = (new Date(initTime)).getTime();
+		endTime = initTime;
+		return initTime;
+	}
+	return endTime;
+}
+function loadCell(selectorId) {// 小区
+	ajaxUtil({}, mainpath + "/indoor/loadCell", function(response) {
+		if (response == null) {
+			alert("null response");
+			return;
+		}
+		var list = response.list;
+		var ciInSession = response.ciInSession;
+		var network = response.network;
+		var hasCiInSession = false;
+
+		var selector = $(selectorId);
+		var theHtml = "";
+		for (var i = 0; i < list.length; i++) {
+			String
+			unitStr = "";
+			if (list[i].unit != '0')
+				unitStr = (unitStr + list[i].unit + "单元");
+			if (list[i].ci == ciInSession && network == list[i].network) {
+				hasCiInSession = true;
+				theHtml += "<option value='" + list[i].buildingId + "&"
+						+ list[i].ci + "&" + list[i].network + "' selected>"
+						+ list[i].ci + " " + list[i].network + "("
+						+ list[i].name + unitStr + ")</option>";
+			} else {
+				theHtml += "<option value='" + list[i].buildingId + "&"
+						+ list[i].ci + "&" + list[i].network + "'>"
+						+ list[i].ci + " " + list[i].network + "("
+						+ list[i].name + unitStr + ")</option>";
+			}
+		}
+		selector.html(theHtml);
+		if (!hasCiInSession)
+			$("#cellSelector").get(0).selectedIndex = -1;
+		else {
+			// alert("yes");
+			loadFloor("#floorSelector", getCiOrBuildingId("buildingId"),
+					getCiOrBuildingId("ci"));
+		}
+		// alert($("#buildingSelector").val());
+		// loadFloor("#floorSelector", $("#buildingSelector").val());
+		// loadSearchSession(response);
+	}, function(response, reason) {
+		alert("拉取cell信息失败");
+	});
+}
+function loadFloor(selectorId, buildingId, ci, isContainAllFloor) {
+	ajaxUtil({
+		"buildingId" : buildingId
+	}, mainpath + "/indoor/loadFloor", function(response) {
+		var data = response.floor;
+		// ("floorUpGround" "floorUnderGround")
+		var selector = $(selectorId);
+		var theHtml = "";
+		var floorInSession = response.floorInSession;
+		var hasFoundFloor = false;
+		var selected = "";
+		if (typeof (isContainAllFloor) != undefined && isContainAllFloor == 1) {
+			theHtml += "<option value='" + 0 + "'>全部楼层</option>";
+		}
+		for (var i = -data.floorUnderGround; i <= data.floorUpGround; i++) {
+			if (!hasFoundFloor && floorInSession == i) {
+				hasFoundFloor = true;
+				selected = "selected";
+			}
+			if (i < 0)
+				theHtml += "<option value='" + i + "' " + selected + " >B"
+						+ (-i) + "#</option>";
+			else if (i > 0)
+				theHtml += "<option value='" + i + "' " + selected + " >F" + i
+						+ "#</option>";
+
+			selected = "";
+		}
+		selector.html(theHtml);
+
+		// if (!hasFoundFloor)
+		// $(selectorId).get(0).selectedIndex = -1;
+		// else {
+		// // alert("yes");
+		//
+		// }
+	}, function(response, reason) {
+		alert("拉取floor信息失败");
+	});
+}
+function loadImsi(selectorId, buildingId) {
+	ajaxUtil({
+		"building" : buildingId
+	}, mainpath + "/inspectAdmin/loadImsi", function(response) {
+		var imsiInfor = response.imsiInfor;
+		var imsiInSession = response.imsiInSession;
+		var hasFoundImsi = false;
+		var selected = "";
+		console.log(imsiInfor);
+		var theHTML;
+		for (var i = 0; i < imsiInfor.length; i++) {
+			var number = imsiInfor[i].phoneNumber;
+			var imsi = imsiInfor[i].imsi;
+			if (!hasFoundImsi && imsiInSession == imsi) {
+				hasFoundImsi = true;
+				selected = "selected";
+			}
+			if (number == null || typeof (number) == "undefined"
+					|| number.trim().length == 0)
+				number = "暂无手机号";
+			theHTML += "<option value='" + imsi + "' " + selected + " >"
+					+ number + "</option>"
+			selected = "";
+		}
+		console.log(theHTML);
+		$(selectorId).html(theHTML);
+	}, function(response, reason) {
+	});
+}
+function loadBuildingSearch(inputId, floorId, imsiId, buildingId) {
+
+	if (typeof (buildingId) != "undefined" && buildingId != null) {
+		if ($(inputId).length == 0) {
+			// alert("没有id为 " + inputId + " 元素");
+			return;
+		}
+
+		ajaxUtil({
+			"buildingId" : buildingId
+		}, mainpath + "/buildingStatistic/getBuildingName", function(response) {
+			var buildingName = response.buildingName;
+			if (buildingName != null) {
+				$("#buildingSearch").val(buildingName);
+				$(inputId).val(buildingId);
+				if (floorId != null && $(floorId).length != 0)
+					loadFloor(floorId, buildingId, 0, 1);
+				if (imsiId != null && $(imsiId).length != 0)
+					loadImsi(imsiId, buildingId);
+			}
+		}, function(response, reason) {
+		})
+
+	}
+
+}
+/**
+ * 获取session中的数据
+ */
+function loadSessionData() {
+	ajaxUtil({}, mainpath + "/indoor/dataInSession", function(response) {
+		/** 自动填充时间* */
+		var _starttime = response.startTimeInSession;
+		var _endtime = response.endTimeInSession;
+		if (_starttime != null && _endtime != null) {
+			_starttime = (new Date(_starttime)).toCommonCase();
+			_endtime = (new Date(_endtime)).toCommonCase();
+			$('#starttime').attr("value", _starttime);
+			$('#endtime').attr("value", _endtime);
+		}
+		var buildingId = response.buildingIdInSession;
+
+		if (buildingId != null) {
+			loadBuildingSearch("#buildingSearchedId", "#floorSelector",
+					"#imsi", buildingId);
+		}
+
+		var network = response.network;
+		if (network != null) {
+			if ($("#network").length != 0) {
+				$("#network").val(network);
+			}
+		}
+	}, function(response, reason) {
+		alert("拉取Session信息失败");
+	});
+}
+function initSearch(_mainpath, _onSearch) {
+	mainpath = _mainpath;
+	startTime = null;
+	endTime = null;
+	if (_onSearch != undefined && _onSearch != null)
+		_onSearch();
+}
+function initCell() {
+	$("#cellSelector").change(
+			function() {
+				loadFloor("#floorSelector", getCiOrBuildingId("buildingId"),
+						getCiOrBuildingId("ci"));
+			});
+	loadCell("#cellSelector");
+	// loadFloor("#floorSelector");
+}
+function split(type, str) {
+	// var str = _str
+	// if (typeof (_str) == "undefined" || _str == null)
+	// str = $("#cellSelector").val()
+	if (type == "network")
+		return str.split("&")[2];
+	if (type == "ci")
+		return str.split("&")[1];
+	if (type == "buildingId")
+		return str.split("&")[0];
+}
+/**
+ * 
+ * @param type
+ *            "buildingId" or "ci" or "network"
+ */
+function getCiOrBuildingId(type) {
+	if ($("#cellSelector").val() != null
+			&& $("#cellSelector").val().trim().length != 0)
+		return split(type, $("#cellSelector").val());
+	else
+		return null
+}
+
+function loadSearchSession(response) {
+	var startTimeInSession = response.startTimeInSession;
+	var endTimeInSession = response.endTimeInSession;
+	var ciInSession = response.ciInSession;
+	var network = response.network;
+	alert("session:\n startTime " + startTimeInSession + "\n endTime "
+			+ endTimeInSession + "\n ci " + ciInSession + "\n network "
+			+ network);
+}
+
+function initBuildingSearch() {
+	$("#buildingSearch").autocomplete(
+			{
+				autoFocus : true,
+				delay : 900,
+				minLength : 1,
+				max : 10,
+				source : function(request, response) {
+					ajaxUtil({
+						"buildingName" : request.term + "%"
+					}, mainpath + "/buildingStatistic/getBuildingLike",
+							function(_response) {
+								response(_response.list);
+							}, function(_response, reason) {
+							});
+				},
+				select : function(event, ui) {
+					$('#buildingSearchedId').val(ui.item.value);
+					ui.item.value = ui.item.label;
+					// alert($('#buildingSearchedId').val());
+					loadFloor("#floorSelector", $('#buildingSearchedId').val(),
+							0, 1);
+					loadImsi("#imsi", $("#buildingSearchedId").val());
+				}
+			});
+}
+/** 实时自动填充* */
+function initCiSearch(onCiSearch) {
+	$("#CiSearch").autocomplete({
+		autoFocus : true,
+		delay : 900,
+		minLength : 1,
+		max : 10,
+		source : function(request, response) {
+			ajaxUtil({
+				"CiorCName" : request.term + "%",
+				"network" : $("#network").val()
+			}, mainpath + "/outdoor/getCiOrCNameLike", function(_response) {
+				response(_response.list);
+			}, function(_response, reason) {
+			});
+		},
+		select : function(event, ui) {
+			var ci = ui.item.value;
+			ui.item.value = ui.item.label;
+			onCiSearch(ci);
+		}
+	});
+}

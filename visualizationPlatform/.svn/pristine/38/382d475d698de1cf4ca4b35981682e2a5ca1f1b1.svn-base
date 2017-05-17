@@ -1,0 +1,171 @@
+var alertnum=-73;
+function onSearch() {
+	$("#search").click(function() {
+		ajaxUtil({
+			"startTime" : getStartTime(),
+			"endTime" : getEndTime(),
+			"wpNetwork" : $("#network").val()
+		}, mainpath + "/outdoor/pointList", function(response) {
+			alert(JSON.stringify(response));
+			drawMap(response);
+		}, function(response, reason) {
+		});
+	});
+}
+
+function drawMap(response) {
+	// console.log(response);
+	var markerArr = response.list;
+	// 设置地图的中心点为第一个定位点
+	mp.setCenter(new BMap.Point(markerArr[0].longitude, markerArr[0].latitude));
+	for (var j = 0; j < markerArr.length; j++) {
+		// 使用闭包(function(){})();给每一个循环变量添加点击事件
+		(function() {
+			var i = j;
+			var json = markerArr[i];
+			var time = json.time;// 时间
+			var nt = json.netType;// 网络类型
+			var op = json.operator;// 运营商
+			var avs = json.averageStrength;// 平均场强
+			var txt = json.name;// 建筑名称
+			var prv = json.province;// 省份
+			var ct = json.city;// 城市
+			var ci = json.ci;// 小区编号
+			var pintx = json.longitude;// 经度
+			var pinty = json.latitude;// 维度
+			var bgcolor;// 信息窗口的颜色
+			var titlecolor;// 标题的颜色
+			var pt = new BMap.Point(pintx, pinty);
+			var myIcon, marker;
+
+			/** 信号强度低于-90bpm的定位点标识为红色* */
+			if (avs < alertnum ) {
+				myIcon = new BMap.Icon("/androidServer/images/redicon.png",
+						new BMap.Size(20, 27));
+				marker = new BMap.Marker(pt, {
+					icon : myIcon
+				});
+				bgcolor = "#f2dede";
+				titlecolor="#a61e1e";
+			}
+			// else if (avs > -110 && avs < -90) {
+			// myIcon = new BMap.Icon("/androidServer/images/yellowicon1.png",
+			// new BMap.Size(20, 27));
+			// marker = new BMap.Marker(pt, {
+			// icon : myIcon
+			// });
+			// }
+			/** 信号强度大于-90bpm的定位点标识为绿色* */
+			else if (avs > alertnum) {
+				myIcon = new BMap.Icon("/androidServer/images/greenicon.png",
+						new BMap.Size(20, 27));
+				marker = new BMap.Marker(pt, {
+					icon : myIcon
+				});
+				bgcolor = "#dff0d8";
+				titlecolor = "#339933";
+			}
+			/** 无效定位点表示为灰色* */
+			else {
+				myIcon = new BMap.Icon("/androidServer/images/gray.png",
+						new BMap.Size(20, 27));
+				marker = new BMap.Marker(pt, {
+					icon : myIcon
+				});
+				bgcolor = "#dedede";
+			}
+			mp.addOverlay(marker);
+			var network = getNetType(op, nt);
+			/** 定位点最小化显示的内容* */
+			var mincontent = "<table  style='border-radius:0.2em; padding:10px; width:220px; height:60px;background-color:"
+					+ bgcolor
+					+ "'><tbody>"
+					+ "<tr><td>&nbsp;&nbsp;网络类型：</td><td>"
+					+ network
+					+ "</td></tr>"
+					+ "<tr><td >&nbsp;&nbsp;平均场强：</td><td style='font-weight:600'>"
+					+ avs
+					+ "&nbsp;dbm</td></tr>" + "</tbody></table>";
+			/** 定位点最大化显示的内容* */
+			var maxcontent = "<table style='line-height:25px;width:220px; height:220px;background-color:"+bgcolor+"'><tbody>"
+					+ "<tr><td>&nbsp;&nbsp;网络类型：</td><td>"
+					+ network
+					+ "</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;平均场强：</td><td>"
+					+ avs
+					+ "dbm</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;建筑名称：</td><td>"
+					+ txt
+					+ "</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;省份：</td><td>"
+					+ prv
+					+ "</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;城市：</td><td>"
+					+ ct
+					+ "</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;小区编号：</td><td>"
+					+ ci
+					+ "</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;经度：</td><td>"
+					+ pintx
+					+ "</td></tr>"
+					+ "<tr><td>&nbsp;&nbsp;纬度：</td><td>"
+					+ pinty
+					+ "</td></tr>"
+					+ "</tbody></table>";
+			var opts = {
+				width : 180, // 信息窗口宽度
+				height : 100, // 信息窗口高度
+				title : "<h4 style='color:" + titlecolor + "'>" + txt + "</h4>", // 信息窗口标题
+				enableAutoPan : true,// 开启打开信息窗口时地图自动平移
+				enableCloseOnClick : true,// 开启点击地图时自动关闭信息窗口
+				maxWidth : 220, // 信息窗口最大化时的宽度
+			};
+			var infoWindow = new BMap.InfoWindow(mincontent, opts); // 创建信息窗口对象
+			infoWindow.enableMaximize();// 开启窗口最大化功能
+			infoWindow.setMaxContent(maxcontent);
+			marker.addEventListener("mouseover", function(e) {
+				mp.openInfoWindow(infoWindow, pt);// 开启信息窗口
+			});
+			marker.addEventListener("click", function(e) {
+				ajaxUtil({
+					"ci" : ci,
+					"network" : network
+				}, mainpath + "/outdoor/setCiInSession", function() {
+					alert("即将跳转 ci=" + ci);
+				}, function() {
+					alert("建立会话失败 ciInSession");
+				})
+				window.location.href = "indoor_statistic";
+			});
+		})();
+	}
+
+}
+
+function getNetType(op, network) {
+	var operator = "未知运营商";
+	if (op == "00" || op == "02")
+		operator = "移动";
+	else if (op == "01")
+		operator = "联通";
+	else if (op == "03")
+		operator = "电信"
+
+	var _2 = "'EDGE', 'GPRS', 'CDMA', '1xRTT', 'IDEN'";
+	var _3 = "'UMTS', 'EVDO_0', 'EVDO_A', 'HSDPA', 'HSPA', 'HSPAP', 'HSUPA','EVDO_B', 'EHRPD'";
+	var _4 = "'LTE'";
+
+	alert(network);
+	if (_2.indexOf(network.trim()) != -1) {
+		operator += "2G";
+	} else if (_3.indexOf(network.trim()) != -1) {
+		operator += "3G";
+	} else if (_4.indexOf(network.trim()) != -1) {
+		operator += "4G";
+	} else {
+		operator += "未知网络类型";
+	}
+	return operator;
+
+}

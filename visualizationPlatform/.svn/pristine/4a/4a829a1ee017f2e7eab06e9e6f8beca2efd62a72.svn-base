@@ -1,0 +1,280 @@
+package androidServer.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import androidServer.annotation.Authenticate;
+import androidServer.bean.Beacon;
+import androidServer.bean.Building;
+import androidServer.bean.WorkParameter;
+import androidServer.service.DBService;
+import androidServer.util.Constants;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/deviceAdmin")
+public class DeviceAdminController {
+
+	@Autowired
+	DBService dbService;
+
+	/**
+	 * 分页读取building表数据
+	 * 
+	 * @param request
+	 * @param response
+	 * @param startPage
+	 * @param pageSize
+	 * @return
+	 */
+	@RequestMapping("loadAllBuilding")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> loadAllWP(HttpServletRequest request, HttpServletResponse response, int startPage,
+			int pageSize) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		List<Building> list = dbService.getAllBuilding(province, city, startPage, pageSize);
+		long totalCount = dbService.getBuildingTotalCount(province, city);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		data.put("totalCount", totalCount);
+		return data;
+	}
+
+	/**
+	 * 获取会话中缓存的building信息（如果有的话）
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 */
+	@RequestMapping("getModifiedBuilding")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> getModifiedBuilding(HttpServletRequest request, HttpServletResponse response) {
+		Integer buildingInSession = SessionUtils.getAtt(request, Constants.SessionKey.BUILDING_TO_BE_MODIFIED,
+				Integer.class);
+		Map<String, Object> data = null;
+		if (buildingInSession == null) {
+			data = WebUtil.errorResponse(request, WebUtil.NO_BUILDING_MODIFIED_IN_SESSION,
+					Constants.ErrorType.NO_BUILDING_MODIFIED_IN_SESSION);
+			return data;
+		}
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+
+		Building building = dbService.getBuilding(buildingInSession);// d[1]
+																		// is
+																		// unit
+		data = WebUtil.okResponse(request);
+		data.put("buildingInfo", building);
+		return data;
+	}
+
+	@RequestMapping("insertBuilding")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> insertBuilding(HttpServletRequest request, HttpServletResponse response,
+			@ModelAttribute Building building) {
+		// System.out.println(wp.getProvince());
+		int id_increament = dbService.insertBuilding(building);
+		//System.out.println("自增id " + id_increament);
+		String msg = id_increament == 0 ? "插入失败" : "插入成功";
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("msg", msg);
+		data.put("id", id_increament);
+		return data;
+	}
+
+	@RequestMapping("updateBuilding")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> updateBuilding(HttpServletRequest request, HttpServletResponse response,
+			@ModelAttribute Building building) {
+		// System.out.println(wp.getProvince());
+		boolean status = dbService.updateBuilding(building);
+		String msg;
+		if (status) {
+			msg = "更新新数据成功";
+		} else {
+			msg = "更新新数据失败";
+		}
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("msg", msg);
+		return data;
+	}
+
+	@RequestMapping("deleteBuilding")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> deleteBuilding(HttpServletRequest request, HttpServletResponse response, int id, String unit) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		dbService.deleteBuilding(province, city, id, unit);
+		dbService.dropBuildingCi(id);
+		dbService.deleteBuildingMap(0, id);
+		Map<String, Object> data = WebUtil.okResponse(request);
+
+		return data;
+	}
+
+	@RequestMapping("buildingCi")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> buildingCi(HttpServletRequest request, HttpServletResponse response, int buildingId) {
+		List<Map<String, Object>> list = dbService.buildingCiDetail(buildingId);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	@RequestMapping("deleteBuildingCi")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> deleteBuildingCi(HttpServletRequest request, HttpServletResponse response, int buildingId) {
+		boolean status = dbService.deleteBuildingCi(buildingId);
+		Map<String, Object> data = null;
+		if (status)
+			data = WebUtil.okResponse(request);
+		else
+			data = WebUtil.errorResponse(request, WebUtil.ERROR, Constants.ErrorType.ERROR);
+		return data;
+	}
+
+	@RequestMapping("updateBuildingCi")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> updateBuildingCi(HttpServletRequest request, HttpServletResponse response, String updateList,
+			String insertList) {
+		dbService.updateBuildingCi(updateList);
+		boolean statusInsert = dbService.insertBuildingCi(insertList);
+		Map<String, Object> data = null;
+		if (statusInsert)
+			data = WebUtil.okResponse(request);
+		else
+			data = WebUtil.errorResponse(request, WebUtil.ERROR, Constants.ErrorType.ERROR);
+		return data;
+	}
+
+	/**
+	 * 更新楼层地图
+	 * 
+	 * @param request
+	 * @param response
+	 * @param updateList
+	 * @return
+	 */
+	@RequestMapping("updateBuildingMap")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> updateBuildingMap(HttpServletRequest request, HttpServletResponse response, String updateList) {
+		dbService.updateBuildingMap(updateList);
+
+		Map<String, Object> data = WebUtil.okResponse(request);
+
+		return data;
+	}
+
+	@RequestMapping("deleteBuildingMap")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> deleteBuildingMap(HttpServletRequest request, HttpServletResponse response, int floor,
+			int buildingId) {
+		dbService.deleteBuildingMap(floor, buildingId);
+		Map<String, Object> data = WebUtil.okResponse(request);
+
+		return data;
+	}
+
+	@RequestMapping("getBeaconList")
+	@ResponseBody
+	Map<String, Object> getBeaconList(HttpServletRequest request, HttpServletResponse response, int startPage,
+			int pageSize) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		Integer buildingId = SessionUtils.getAtt(request, Constants.SessionKey.BEACON_IN_BUILDING, Integer.class);
+		Map<String, Object> data = null;
+		if (buildingId == null) {
+			data = WebUtil.errorResponse(request, WebUtil.NO_BEACON_LIST_IN_SESSION,
+					Constants.ErrorType.NO_BEACON_LIST_IN_SESSION);
+			return data;
+		}
+
+		List<Beacon> list = dbService.getBeaconList(buildingId, startPage, pageSize);
+		data = WebUtil.okResponse(request);
+		data.put("list", list);
+
+		long totalCount = dbService.getBeaconTotalNumber(buildingId);
+		data.put("totalCount", totalCount);
+		return data;
+	}
+
+	/**
+	 * 获取会话中缓存的Beacon信息（如果有的话）
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 */
+	@RequestMapping("getModifiedBeacon")
+	@ResponseBody
+	Map<String, Object> getModifiedBeacon(HttpServletRequest request, HttpServletResponse response) {
+		String beaconInSession = SessionUtils.getAtt(request, Constants.SessionKey.BEACON_TO_BE_MODIFIED, String.class);
+		Map<String, Object> data = null;
+		if (beaconInSession == null) {
+			data = WebUtil.errorResponse(request, WebUtil.NO_BEACON_MODIFIED_IN_SESSION,
+					Constants.ErrorType.NO_BEACON_MODIFIED_IN_SESSION);
+			return data;
+		}
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+
+		Beacon beacon = dbService.getBeacon(beaconInSession);
+		data = WebUtil.okResponse(request);
+		data.put("beaconInfo", beacon);
+		return data;
+	}
+
+	@RequestMapping("insertBeacon")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> insertBeacon(HttpServletRequest request, HttpServletResponse response,
+			@ModelAttribute Beacon beacon) {
+		// System.out.println(wp.getProvince());
+		boolean status = dbService.insertBeacon(beacon);
+		String msg;
+		if (status) {
+			msg = "插入新数据成功";
+		} else {
+			msg = "更新数据成功";
+		}
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("msg", msg);
+		return data;
+	}
+
+	@RequestMapping("deleteBeacon")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> deleteBeacon(HttpServletRequest request, HttpServletResponse response, String mac) {
+
+		dbService.deleteBeacon(mac);
+		Map<String, Object> data = WebUtil.okResponse(request);
+
+		return data;
+	}
+}

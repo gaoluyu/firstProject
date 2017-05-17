@@ -1,0 +1,37 @@
+package androidServer.mapper;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+
+import androidServer.bean.HeatData;
+import androidServer.bean.IndoorRecord;
+import androidServer.bean.WorkParameter;
+
+import com.sun.org.glassfish.gmbal.ParameterNames;
+
+public interface BuildingStatisticMapper {
+	List<Map<String, Object>> selectCoverageRatio(@Param("startTime") Timestamp startTime,
+			@Param("endTime") Timestamp endTime, @Param("mncList") String mncList, @Param("buildingId") int buildingId,
+			@Param("floor") int floor, @Param("isLocalCid") boolean isLocalCid);
+
+	List<Map<String, Object>> selectWarningNumber(@Param("startTime") Timestamp startTime,
+			@Param("endTime") Timestamp endTime, @Param("mncList") String mncList, @Param("buildingId") int buildingId,
+			@Param("floor") int floor, @Param("userId") String userId, @Param("operator") String operator);
+
+	List<Map<String, Object>> selectBuildingLike(@Param("province") String province, @Param("city") String city,
+			@Param("buildingName") String buildingName);
+	
+	List<Map<String, Object>> selectCidNum(@Param("startTime") Timestamp startTime,
+			@Param("endTime") Timestamp endTime, @Param("mncList") String mncList, @Param("buildingId") int buildingId,
+			@Param("floor") int floor);
+	
+	List<Map<String, Object>> selectCdfData(@Param("startTime") Timestamp startTime,
+			@Param("endTime") Timestamp endTime, @Param("mncList") String mncList, @Param("buildingId") int buildingId,
+			@Param("floor") int floor,@Param("networkType") String networkType);
+	
+	
+
+}

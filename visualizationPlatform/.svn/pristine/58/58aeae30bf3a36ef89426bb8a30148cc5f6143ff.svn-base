@@ -1,0 +1,226 @@
+var mainpath;
+var types = [ "电信|2G", "电信|3G", "电信|4G", "移动|2G", "移动|3G", "移动|4G", "联通|2G",
+		"联通|3G", "联通|4G" ];
+function reportInit(role){
+	if(role==0){
+		$("ul.main-menu li:eq(16)").addClass("active");
+	}else{
+		$("ul.main-menu li:eq(11)").addClass("active");
+	}
+}
+function init(_mainpath) {
+	mainpath = _mainpath;
+	getUserSetting();
+	getCoverageSetting();
+	getNetworkList();
+}
+/** 判断一个数组里面是否存在一个值在特殊状况下的函数，不能复用，原理可以参考* */
+function isExit(newlist, data) {
+	for (var i = 0; i < newlist.length; i++) {
+		if (data == newlist[i].type) {
+			// 如果存在该运营商，就返回它（运营商）对应的场强阈值
+			return newlist[i].warningValue;
+		} else {
+			// 如果循环到最后都不存在该运营商，则返回空值。
+			if (i == (newlist.length - 1)) {
+				return null;
+			}
+		}
+	}
+}
+/** 获取用户的告警值参数设置列表* */
+function getUserSetting() {
+	ajaxUtil(
+			{},
+			mainpath + '/userAdmin/getUserSetting',
+			function(response) {
+				var list = response.list;
+				var html = "";
+				var newlist = [];
+				for (var i = 0; i < list.length; i++) {
+					// 将运营商的两个字段合并成一个，是为了方便与types查询匹配
+					var netType = list[i].netType;
+					var operator = list[i].operator;
+					var warningValue = list[i].warningValue;
+					var type = operator + "|" + netType;
+					newlist.push({
+						"type" : type,
+						"warningValue" : warningValue
+					});
+				}
+				var value = "";
+				for (var i = 0; i < types.length; i++) {
+					// 调用isExit()函数，得到该运营商对应的信号强度阈值
+					value = isExit(newlist, types[i]);
+					if (value == null) {
+						// value = ""
+						continue;
+					}
+					html += "<div><dt>"
+							+ types[i]
+							+ "</dt><dd><input id='"
+							+ types[i]
+							+ "' type='text' value='"
+							+ value
+							+ "'/>dBm<span style='color:red;font-size:small'></span></dd></div><br/>";
+				}
+				$("#warningValueSetting").html(html);
+			}, function(response, reason) {
+				alert(reason);
+			});
+}
+
+/** 修改前异常检查函数* */
+function check() {
+	var check = true;
+	$("#warningValueSetting div").each(function(index, domEle) {
+		var value = $(domEle).find('input')[0].value;
+		var span = $(domEle).find('span');
+		if (value == "" || value == null) {
+			$(span).html("<i class='glyphicon glyphicon-remove'></i>不能为空");
+			check = false;
+		} else if (value > 0 || value == 0) {
+			$(span).html("<i class='glyphicon glyphicon-remove'></i>请填写负数");
+			check = false;
+		} else {
+			$(span).html("");
+		}
+	});
+	return check;
+}
+/** 修改告警值设置* */
+function modifyWarningValueSetting() {
+	if (check()) {
+		ajaxUtil({
+			"data" : getUpdateWarningValueSetting()
+		}, mainpath + "/userAdmin/modifySetting", function(response) {
+			alert(response.msg);
+			// window.location.href = mainpath + "/page/userAdmin";
+		}, function(response, reason) {
+			alert(response.msg);
+		});
+	} else {
+	}
+}
+/** 获取修改后的告警值设置的参数列表* */
+function getUpdateWarningValueSetting() {
+	var list = [];
+	$("#warningValueSetting div").each(function(index, domEle) {
+		var idString = $(domEle).find('input')[0].id;
+		var warningValue = $(domEle).find('input')[0].value;
+		idString = idString.split("|");
+		var netType = idString[1];
+		var operator = idString[0];
+		var item = {
+			"netType" : netType,
+			"operator" : operator,
+			"warningValue" : warningValue
+		}
+		list.push(item);
+	});
+	return JSON.stringify(list);
+}
+/** 获取用户的覆盖率指标* */
+function getCoverageSetting() {
+	ajaxUtil(
+			{},
+			mainpath + '/userAdmin/getCoverageSetting',
+			function(response) {
+				var list = response.CoverageList;
+				console.log(list);
+				var html = "";
+				for (var i = 0; i < 1; i++) {
+					var netType = list[i].netType;
+					var coverageRatio = list[i].coverageRatio;
+					html += "<div><dt>2G/3G/4G</dt><dd><input id='"
+							+ netType
+							+ "' type='text' value='"
+							+ coverageRatio
+							+ "'/>%<span style='color:red;font-size:small'></span></dd></div><br/>";
+				}
+				$("#coverageRationSetting").html(html);
+			}, function(response, reason) {
+				alert(reason);
+			});
+}
+/** 修改覆盖率指标设置* */
+function modifyCoverageRationSetting() {
+	ajaxUtil({
+		"coverageRatio" : getUpdateCoverageRationSetting()
+	}, mainpath + "/userAdmin/modifyCoverage", function(response) {
+		alert(response.msg);
+		// window.location.href = mainpath + "/page/userAdmin";
+	}, function(response, reason) {
+		alert(response.msg);
+	});
+}
+/** 获取修改后的覆盖率指标的参数列表* */
+function getUpdateCoverageRationSetting() {
+	var coverageRatio = $("#coverageRationSetting div input")[0].value;
+	return coverageRatio;
+}
+/** 获取信号质量等级指标* */
+function getNetworkList() {
+	ajaxUtil(
+			{},
+			mainpath + '/userAdmin/getNetworkList',
+			function(response) {
+				var list = response.NetworkList;
+				console.log(list);
+				var html = "<thead>"
+						+ "<tr class='active'><th>网络类型</th><th>绿色最低场强</th><th>蓝色最低场强</th>"
+						+ "<th>黄色最低场强</th><th>红色最低场强";
+				html += "<tbody>"
+				for (var i = 0; i < list.length; i++) {
+					var network = list[i].network;
+					var green_bottom = list[i].green_bottom;
+					var blue_bottom = list[i].blue_bottom;
+					var yellow_bottom = list[i].yellow_bottom;
+					var red_bottom = list[i].red_bottom;
+					html += "<tr><td >"
+							+ network
+							+ "</td><td><input name='green_bottom' value='"
+							+ green_bottom
+							+ "'>dBm</input></td><td><input name='blue_bottom' value='"
+							+ blue_bottom
+							+ "'>dBm</input></td><td><input name='yellow_bottom' value='"
+							+ yellow_bottom
+							+ "'>dBm</input></td><td><input name='red_bottom' value='"
+							+ red_bottom + "'>dBm</input></td></tr>";
+				}
+				html += "</tbody>"
+				$("#networkListSetting").html(html);
+			}, function(response, reason) {
+				alert(reason);
+			});
+}
+/** 修改信号质量等级指标* */
+function modifyNetworkListSetting() {
+	ajaxUtil({
+		"data" : getUpdateNetworkListSetting()
+	}, mainpath + "/userAdmin/modifyNetworklist", function(response) {
+		alert(response.msg);
+		// window.location.href = mainpath + "/page/userAdmin";
+	}, function(response, reason) {
+		alert(response.msg);
+	});
+}
+function getUpdateNetworkListSetting() {
+	var list = [];
+	$("#networkListSetting tbody tr").each(function(index, domEle) {
+		var network = $(this).find('td:first').text();
+		var green_bottom = $(domEle).find('input[name=green_bottom]').val();
+		var blue_bottom = $(domEle).find('input[name=blue_bottom]').val();
+		var yellow_bottom = $(domEle).find('input[name=yellow_bottom]').val();
+		var red_bottom = $(domEle).find('input[name=red_bottom]').val();
+		var item = {
+			"network" : network,
+			"green_bottom" : green_bottom,
+			"blue_bottom" : blue_bottom,
+			"yellow_bottom" : yellow_bottom,
+			"red_bottom" : red_bottom
+		}
+		list.push(item);
+	});
+	return JSON.stringify(list);
+}

@@ -1,0 +1,91 @@
+package androidServer.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.annotation.Authenticate;
+import androidServer.service.DBService;
+import androidServer.util.Constants;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/inspectAdmin")
+
+public class InspectAdminController {
+
+	@Autowired
+	DBService dbService;
+
+	/**
+	 * 获取指定building的楼内巡检手机的imsi和phoneNumber
+	 * 
+	 * @param request
+	 * @param response
+	 * @param building
+	 * @return (imsi,phoneNumber)
+	 */
+	@RequestMapping("loadImsi")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> loadImsi(HttpServletRequest request, HttpServletResponse response, int building) {
+		List<Map<String, Object>> imsiInfor = dbService.getImsi(building);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("imsiInfor", imsiInfor);
+		return data;
+
+	}
+
+	/**
+	 * 在指定building楼内，获取一段时间内指定imsi的手机出现在各个beacon区域的次数统计值
+	 * 
+	 * @param request
+	 * @param response
+	 * @param buildingId
+	 * @return (floor,num,i.position,name, x,y,imsi)
+	 */
+	@RequestMapping("ImsiAppearStatic")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> imsiStatic(HttpServletRequest request, HttpServletResponse response, long startTime,
+			long endTime, long imsi, int building) {
+		List<Map<String, Object>> imsiStatic = null;
+		Map<String, Object> data = WebUtil.okResponse(request);
+		imsiStatic = dbService.getImsiStatic(startTime, endTime, imsi, building);
+		data.put("imsiStatic", imsiStatic);
+		return data;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param startTime
+	 * @param endTime
+	 * @param imsi
+	 * @param building
+	 * @return {'list':[{'date':'2015-10-21','num':10}],'boxPlot':[{'date':'2015
+	 *         -10-21','maxNum':10,'minNum':10,'avgNum':10}]}
+	 */
+	@RequestMapping("positionCurve")
+	@ResponseBody
+	@Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	Map<String, Object> positionCurve(HttpServletRequest request, HttpServletResponse response, long startTime,
+			long endTime, long imsi, int building) {
+		List<Map<String, Object>> curve = dbService.getPositionCurve(startTime, endTime, imsi, building);
+		List<Map<String, Object>> curveBox = dbService.getPositionCurveBoxPlot(startTime, endTime, imsi, building);
+		Map<String, Object> data = WebUtil.okResponse(request);
+
+		data.put("list", curve);
+		data.put("boxPlot", curveBox);
+		return data;
+	}
+
+}

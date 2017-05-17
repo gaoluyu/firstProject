@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.WarningMapper">
+
+	<select id="truncateScan">
+		truncate table strengthscan;
+	</select>
+
+	<insert id="udpateScan">
+		insert into
+		strengthscan(province,city,buildingId,position,operator,netType,cid,strength)
+		select
+		b.province,b.city,bwp.buildingId,strengthTemp.* from
+		(
+		select
+		position,
+		CASE
+		WHEN mnc='00' or
+		mnc='02'
+		THEN '移动'
+		WHEN mnc='01' THEN '联通'
+		WHEN
+		mnc='03' THEN '电信'
+		end as
+		operator
+		,
+		CASE
+		WHEN networkType in
+		('EDGE','GPRS','CDMA','1xRTT','IDEN')
+		THEN
+		'2G'
+		WHEN networkType in
+		('UMTS','EVDO_0','EVDO_A','HSDPA','HSPA','HSPAP','HSUPA','EVDO_B','EHRPD')
+		THEN '3G'
+		WHEN networkType in ('LTE') THEN '4G'
+		end as
+		_networkType,cid,
+		AVG(signalStrength) as strength
+		from
+		indoorrecord
+		where 
+		<![CDATA[ 
+		time >=#{timeStart} and time <#{timeEnd} ]]>
+		and cid !=0 and position !='暂无设备'
+		group by
+		position,cid,operator,_networkType
+		) as
+		strengthTemp,buildingworkparameter bwp,building b
+		where
+		strengthTemp.cid=bwp.ci and CONCAT(operator,_networkType)=bwp.network
+		and b.id=bwp.buildingId
+	</insert>
+
+	<select id="insertWarningBox">
+		insert into
+		warningBox(toUserId,buildingId,position,cid,operator,netType,value,startTime,endTime,isRead)
+		select us.userId,ss.buildingId,ss.position,
+		ss.cid,ss.operator,ss.netType,ss.strength ,
+		#{timeStart},#{timeEnd},'未处理'
+		from StrengthScan ss,UserSetting us
+		where
+		ss.province=us.province and
+		ss.city=us.city
+		and ss.operator=us.operator
+		and ss.netType=us.netType 
+		<![CDATA[ and ss.strength <us.warningValue  ]]>
+
+	</select>
+
+	<select id="selectMessageNumber" resultType="long">
+		select count(*) from
+		WarningBox where toUserId=#{username} and isRead="未处理" and
+		operator
+		like #{operator};
+	</select>
+
+	<select id="selectMessageTotalNumber" resultType="long">
+		select count(*)
+		from WarningBox where toUserId=#{username} and operator like
+		#{operator} ;
+	</select>
+</mapper>

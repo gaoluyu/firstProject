@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.NeighborMapper">
+
+	<select id="selectCidAndNeighbor" resultType="Map">
+		SELECT
+		name,
+		floor,
+		description,
+		networkType,
+		AVG(signalStrength) AS
+		avg_ss,
+		MIN(neighborNumber) AS min_nn,
+		MAX(neighborNumber) AS max_nn,
+		AVG(maxNeigborStrength) AS avg_maxNS,
+		AVG(mainNeigborGap) AS
+		avg_mainNeighborGap
+		FROM
+		(
+		SELECT
+		bl.`name`,
+		b.floor,
+		b.description,
+		i.uuid,
+		i.time,
+		i.networkType,
+		i.position,
+		i.cid,
+		i.signalStrength,
+		count(uuid) AS
+		neighborNumber,
+		max(n.signalStrength) AS maxNeigborStrength,
+		i.signalStrength - max(n.signalStrength) AS mainNeigborGap
+		FROM
+		indoorrecord i,
+		neighbor n,
+		beacon b,
+		building bl
+		WHERE
+		i.uuid = n.uuidFK
+		AND i.position = b.id and b.building=bl.id
+		AND bl.id = #{buildingId}
+		<if test="floor!=0">
+			and b.floor =#{floor}
+		</if>
+		and
+		bl.province=#{province} and bl.city=#{city}
+		AND i.networkType in
+		(${networkList}) and i.mnc
+		in (${mncList})
+		<![CDATA[
+		AND i.time >= #{timeStart}
+		AND
+		i.time < #{timeEnd}
+		]]>
+		GROUP BY
+		i.uuid
+		ORDER BY
+		i.uuid
+		) AS t
+		GROUP BY
+		position,
+		networkType
+		ORDER BY
+		floor,
+		position
+	</select>
+</mapper>

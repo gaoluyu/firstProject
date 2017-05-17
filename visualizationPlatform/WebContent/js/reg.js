@@ -1,0 +1,228 @@
+var mainpath;
+var flag;
+function regInit(_mainpath) {
+	mainpath = _mainpath;
+	getProvince("#province", "#city");
+	$("#submit").click(function() {
+		submit();
+	});
+	$('#province').change(function() {
+		getCity("#province", "#city");
+	});
+}
+function getProvince(pselect, cselect) {
+	//  alert("search ");
+	ajaxUtil({}, mainpath + "/lr/getProvince", function(response) {
+		addSelectList($(pselect), response.list);
+		getCity(pselect, cselect);
+	}, function(reason, code) {
+		alert("code:\n" + code);
+	});
+}
+function addSelectList(container, nameList) {
+	var theHtml = "";
+	for (var index = 0; index < nameList.length; index++)
+		theHtml += "<option value=\"" + nameList[index] + "\">"
+				+ nameList[index] + "</option>";
+	container.html(theHtml);
+}
+function getCity(pselect, cselect) {
+	// alert("search " + value.val());
+	ajaxUtil({
+		"province" : $(pselect).val()
+	}, mainpath + "/lr/getCity", function(response) {
+		addSelectList($(cselect), response.list);
+	}, function(reason, code) {
+		alert("code:\n" + code);
+	});
+}
+/** * */
+function checkTelephoneNumber() {
+	var str = $("#telephone")[0].value;
+	var reg = /^\d{11}$/;
+	if (reg.test(str)) {
+		$("#Telephone").html("手机号格式正确");
+		$("#Telephone").prepend("<span class='glyphicon glyphicon-ok'></span>");
+		$("#Telephone").css("color", "green");
+		$("#Telephone").css("font-size", "small");
+		return true;
+	} else {
+		$("#Telephone").html("手机号格式不正确");
+		$("#Telephone").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Telephone").css("color", "red");
+		$("#Telephone").css("font-size", "small");
+		return false;
+	}
+}
+function check() {
+	var name = $("#UserName").val();
+	var password = $("#ps").val();
+	var re_word = $("#reps").val();
+	var telephone = $("#telephone").val();
+	var code = $("#code").val();
+	if(name == ""||password == ""||re_word==""|telephone==""||code==""){
+		alert("所有选项都是必填项，请您检查是否有漏填项!");
+		return false;
+	}else if(flag==false||Word()==false||Re_Word()==false||checkTelephoneNumber()==false){
+		alert("请检查您填写的是否完全正确！");
+		return false;
+	}else{
+		return true;
+	}
+}
+function User() {
+	var filter = /^\s*[.A-Za-z0-9_-]{6,18}\s*$/;
+	if (!filter.test($("#UserName").val())) {
+		$("#User").html("用户名格式不正确，请使用6-18位字母和数字及下划线，注意不要使用空格");
+		$("#User").prepend("<span class='glyphicon glyphicon-remove'></span>");
+		$("#User").css("color", "red");
+		$("#User").css("font-size", "small");
+		return false;
+	} else {
+		$("#User").html("该用户名符合规范");
+		$("#User").prepend("<span class='glyphicon glyphicon-ok'></span>");
+		$("#User").css("color", "green");
+		$("#User").css("font-size", "small");
+		return true;
+	}
+}
+function UniqueUser() {
+	ajaxUtil({
+		"userName" : $("#UserName").val()
+	}, mainpath + "/lr/uniqueUsername", function(resposne) {
+		$("#User").html("该用户名可用");
+		$("#User").prepend("<span class='glyphicon glyphicon-ok'></span>");
+		$("#User").css("color", "green");
+		$("#User").css("font-size", "small");
+		flag = true;
+	}, function(response, reason) {
+		$("#User").html("对不起，该用户名已被占用！");
+		$("#User").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#User").css("color", "red");
+		$("#User").css("font-size", "small");
+		flag = false;
+	})
+}
+function checkUser(){
+	if(User()){
+		UniqueUser();
+	}else{
+		flag=false;
+	}
+}
+function Word() {
+	var filter = /^\s*[.A-Za-z0-9_-]{6,18}\s*$/;
+	var PassWord = $("#ps")[0].value;
+	if (!filter.test(PassWord)) {
+		$("#Pass").html("密码格式不正确，请使用6-18位字母和数字及下划线，注意不要使用空格");
+		$("#Pass").prepend("<span class='glyphicon glyphicon-remove'></span>");
+		$("#Pass").css("color", "red");
+		$("#Pass").css("font-size", "small");
+		return false;
+	} else {
+		$("#Pass").html("该密码可用");
+		$("#Pass").prepend("<span class='glyphicon glyphicon-ok'></span>");
+		$("#Pass").css("color", "green");
+		$("#Pass").css("font-size", "small");
+		return true;
+	}
+}
+function Re_Word() {
+	var re_PassWord = $("#reps")[0].value;
+	var PassWord = $("#ps")[0].value;
+	if (Word() == true) {
+		if (re_PassWord != PassWord) {
+			$("#Re_Pass").html("两次输入密码不一致，请重新填写");
+			$("#Re_Pass").prepend(
+					"<span class='glyphicon glyphicon-remove'></span>");
+			$("#Re_Pass").css("color", "red");
+			$("#Re_Pass").css("font-size", "small");
+			return false;
+		} else {
+			$("#Re_Pass").html("两次密码输入一致");
+			$("#Re_Pass").prepend(
+					"<span class='glyphicon glyphicon-ok'></span>");
+			$("#Re_Pass").css("color", "green");
+			$("#Re_Pass").css("font-size", "small");
+			return true;
+		}
+	} else {
+		$("#Re_Pass").html("请确认密码输入是否符合规范");
+		$("#Re_Pass").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Re_Pass").css("color", "red");
+		$("#Re_Pass").css("font-size", "small");
+		return false;
+	}
+}
+//手机验证码倒计时函数
+var wait = 60;  
+get_code_time = function (o) {  
+    if (wait == 0) {  
+        o.removeAttr("disabled");  
+        o.html("获取验证码");
+        wait = 60;  
+    } else {  
+        o.attr("disabled", true);  
+        o.html(wait+"秒后重新获取");  
+        wait--;  
+        setTimeout(function() {  
+            get_code_time(o);  
+        }, 1000)  
+    }  
+}  
+function getCheckNum() {
+	// alert("手机号正确");
+	var o = $("#getchecknum");
+	if (checkTelephoneNumber() == true && $("#telephone").val!=null) {
+		get_code_time(o); 
+		ajaxUtil({
+			"telephone" : $("#telephone").val()
+		}, mainpath + "/lr/phoneCode", function(response) {
+			$("#Telephone").html("验证码已发送，请注意查看手机");
+			$("#Telephone").prepend(
+					"<span class='glyphicon glyphicon-ok'></span>");
+			$("#Telephone").css("color", "green");
+			$("#Telephone").css("font-size", "small");
+		}, function(response, reason) {
+			$("#Telephone").html("验证码发送失败");
+			$("#Telephone").prepend(
+					"<span class='glyphicon glyphicon-remove'></span>");
+			$("#Telephone").css("color", "red");
+			$("#Telephone").css("font-size", "small");
+		});
+	} else {
+		$("#Telephone").html("请确认手机号是否正确");
+		$("#Telephone").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Telephone").css("color", "red");
+		$("#Telephone").css("font-size", "small");
+	}
+}
+function submit() {
+	check();
+	ajaxUtil({
+		"province" : $("#province").val(),
+		"city" : $("#city").val(),
+		"username" : $("#UserName").val(),
+		"password" : $("#ps").val(),
+		"telephone" : $("#telephone").val(),
+		"code" : $("#code").val()
+	}, mainpath + "/lr/registry", function(response) {
+		$("#Code").html("验证码正确");
+		$("#Code").prepend(
+				"<span class='glyphicon glyphicon-ok'></span>");
+		$("#Code").css("color", "green");
+		$("#Code").css("font-size", "small");
+		window.location.href = "./regok";
+	}, function(response, reason) {
+		$("#Code").html(reason);
+		$("#Code").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Code").css("color", "red");
+		$("#Code").css("font-size", "small");
+	});
+	return false;
+}

@@ -1,0 +1,256 @@
+package androidServer.util;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import androidServer.bean.WorkParameter;
+
+public class EXCELUtil {
+
+	public static String getPostfix(String path) {
+		if (path == null || Common.EMPTY.equals(path.trim())) {
+			return Common.EMPTY;
+		}
+		if (path.contains(Common.POINT)) {
+			return path.substring(path.lastIndexOf(Common.POINT) + 1, path.length());
+		}
+		return Common.EMPTY;
+	}
+
+	public static List<WorkParameter> readExcel(String path, int startRow, int readSize) throws IOException {
+		if (path == null || Common.EMPTY.equals(path)) {
+			return null;
+		} else {
+			String postfix = getPostfix(path);
+			if (!Common.EMPTY.equals(postfix)) {
+				if (Common.OFFICE_EXCEL_2003_POSTFIX.equals(postfix)) {
+					return readXls(path, startRow, readSize);
+				} else if (Common.OFFICE_EXCEL_2010_POSTFIX.equals(postfix)) {
+					return readXlsx(path, startRow, readSize);
+				}
+			} else {
+				System.out.println(path + Common.NOT_EXCEL_FILE);
+			}
+		}
+		return null;
+	}
+
+	public static List<WorkParameter> readXlsx(String path, int startRow, int readSize) throws IOException {
+		System.out.println(Common.PROCESSING + path);
+		InputStream is = new FileInputStream(path);
+		System.out.println(1);
+		@SuppressWarnings("resource")
+		XSSFWorkbook xssfWorkbook = new XSSFWorkbook(is);
+		List<WorkParameter> list = new ArrayList<WorkParameter>();
+		System.out.println(2);
+		// Read the Sheet
+		for (int numSheet = 0; numSheet < xssfWorkbook.getNumberOfSheets(); numSheet++) {
+			XSSFSheet xssfSheet = xssfWorkbook.getSheetAt(numSheet);
+			if (xssfSheet == null) {
+				continue;
+			}
+			// Read the Row
+			System.out.println("last row number " + xssfSheet.getLastRowNum());
+			int endRow = Math.min(xssfSheet.getLastRowNum(), startRow + readSize - 1);
+			for (int rowNum = startRow; rowNum <= endRow; rowNum++) {
+				// System.out.println(rowNum);
+				XSSFRow xssfRow = xssfSheet.getRow(rowNum);
+				if (xssfRow != null) {
+					WorkParameter wp = parse2WorkParameter(xssfRow);
+					list.add(wp);
+
+				}
+			}
+		}
+		return list;
+	}
+
+	private static WorkParameter parse2WorkParameter(Row ssfRow) {
+		String province = ssfRow.getCell(0) == null ? null : ssfRow.getCell(0).getStringCellValue();
+		String city = ssfRow.getCell(1) == null ? null : ssfRow.getCell(1).getStringCellValue();
+		String region = ssfRow.getCell(2) == null ? null : ssfRow.getCell(2).getStringCellValue();
+		String network = ssfRow.getCell(3) == null ? null : ssfRow.getCell(3).getStringCellValue();
+		double ci = ssfRow.getCell(4) == null ? 0 : ssfRow.getCell(4).getNumericCellValue();
+		double cid = ssfRow.getCell(5) == null ? 0 : ssfRow.getCell(5).getNumericCellValue();
+		double lac = ssfRow.getCell(6) == null ? 0 : ssfRow.getCell(6).getNumericCellValue();
+		double enodeb = ssfRow.getCell(7) == null ? 0 : ssfRow.getCell(7).getNumericCellValue();
+
+		if (network != null && network.equals("移动4G"))
+			ci = 256 * enodeb + cid;
+
+		String freqChannel = null;
+		if (ssfRow.getCell(8) != null && ssfRow.getCell(8).getCellType() == HSSFCell.CELL_TYPE_NUMERIC)
+			freqChannel = String.valueOf((int) (ssfRow.getCell(8).getNumericCellValue()));
+		else if (ssfRow.getCell(8) != null && ssfRow.getCell(8).getCellType() == HSSFCell.CELL_TYPE_STRING)
+			freqChannel = ssfRow.getCell(8).getStringCellValue();
+
+		String cellNameEng = null;
+		if (ssfRow.getCell(9) != null) {
+			ssfRow.getCell(9).setCellType(Cell.CELL_TYPE_STRING);
+			cellNameEng = ssfRow.getCell(9).getStringCellValue();
+		}
+		String cellNameCh = ssfRow.getCell(10) == null ? null : ssfRow.getCell(10).getStringCellValue();
+		String cellAddress = null;
+		if (ssfRow.getCell(11) != null) {
+			ssfRow.getCell(11).setCellType(Cell.CELL_TYPE_STRING);
+			cellAddress = ssfRow.getCell(11).getStringCellValue();
+		}
+		// String cellAddress = ssfRow.getCell(11) == null ? null :
+		// ssfRow.getCell(11).getStringCellValue();
+		double longitude = ssfRow.getCell(12) == null ? 0 : ssfRow.getCell(12).getNumericCellValue();
+		double latitude = ssfRow.getCell(13) == null ? 0 : ssfRow.getCell(13).getNumericCellValue();
+		String belonging = ssfRow.getCell(14) == null ? null : ssfRow.getCell(14).getStringCellValue();
+		String scene = ssfRow.getCell(15) == null ? null : ssfRow.getCell(15).getStringCellValue();
+		String converageType = ssfRow.getCell(16) == null ? null : ssfRow.getCell(16).getStringCellValue();
+
+		WorkParameter workParameter = new WorkParameter();
+		workParameter.setProvince(province);
+		workParameter.setCity(city);
+		workParameter.setRegion(region);
+		workParameter.setNetwork(network);
+		workParameter.setCi((int) ci);
+		workParameter.setWpcid((int) cid);
+		workParameter.setLac((int) lac);
+		workParameter.setEnodeb((int) enodeb);
+		workParameter.setFreqChannel(freqChannel);
+		workParameter.setCellNameEng(cellNameEng);
+		workParameter.setCellNameCh(cellNameCh);
+		workParameter.setCellAddress(cellAddress);
+		workParameter.setLongitude(longitude);
+		workParameter.setLatitude(latitude);
+		workParameter.setBelonging(belonging);
+		workParameter.setScene(scene);
+		workParameter.setConverageType(converageType);
+		if (converageType != null && converageType.equals("室内")) {
+			workParameter.setIsIndoor(1);
+		} else {
+			workParameter.setIsIndoor(0);
+		}
+		return workParameter;
+	}
+
+	/**
+	 * Read the Excel 2003-2007
+	 * 
+	 * @param path
+	 *            the path of the Excel
+	 * @return
+	 * @throws IOException
+	 */
+	@SuppressWarnings("null")
+	public static List<WorkParameter> readXls(String path, int startRow, int readSize) throws IOException {
+		System.out.println(Common.PROCESSING + path);
+		InputStream is = new FileInputStream(path);
+		@SuppressWarnings("resource")
+		HSSFWorkbook hssfWorkbook = new HSSFWorkbook(is);
+		List<WorkParameter> list = new ArrayList<WorkParameter>();
+		// Read the Sheet
+		for (int numSheet = 0; numSheet < hssfWorkbook.getNumberOfSheets(); numSheet++) {
+			HSSFSheet hssfSheet = hssfWorkbook.getSheetAt(numSheet);
+			if (hssfSheet == null) {
+				continue;
+			}
+			// Read the Row
+			int endRow = Math.min(hssfSheet.getLastRowNum(), startRow + readSize - 1);
+			for (int rowNum = startRow; rowNum <= endRow; rowNum++) {
+				System.out.println(rowNum);
+				HSSFRow hssfRow = hssfSheet.getRow(rowNum);
+				if (hssfRow != null) {
+					// String province =
+					// hssfRow.getCell(0).getStringCellValue();
+					// String city = hssfRow.getCell(1).getStringCellValue();
+					// String region = hssfRow.getCell(2).getStringCellValue();
+					// String network = hssfRow.getCell(3).getStringCellValue();
+					// double ci = hssfRow.getCell(4).getNumericCellValue();
+					// double cid = hssfRow.getCell(5).getNumericCellValue();
+					// double lac = hssfRow.getCell(6).getNumericCellValue();
+					// double enodeb = hssfRow.getCell(7).getNumericCellValue();
+					// if (network != null && network.equals("移动4G"))
+					// ci = 256 * enodeb + cid;
+					// String freqChannel = null;
+					// if (hssfRow.getCell(8).getCellType() ==
+					// HSSFCell.CELL_TYPE_NUMERIC)
+					// freqChannel = String.valueOf((int)
+					// (hssfRow.getCell(8).getNumericCellValue()));
+					// else if (hssfRow.getCell(8).getCellType() ==
+					// HSSFCell.CELL_TYPE_STRING)
+					// freqChannel = hssfRow.getCell(8).getStringCellValue();
+					//
+					// String cellNameEng =
+					// hssfRow.getCell(9).getStringCellValue();
+					// String cellNameCh =
+					// hssfRow.getCell(10).getStringCellValue();
+					// String cellAddress =
+					// hssfRow.getCell(11).getStringCellValue();
+					// double longitude =
+					// hssfRow.getCell(12).getNumericCellValue();
+					// double latitude =
+					// hssfRow.getCell(13).getNumericCellValue();
+					// String belonging =
+					// hssfRow.getCell(14).getStringCellValue();
+					// String scene = hssfRow.getCell(15).getStringCellValue();
+					// String converageType =
+					// hssfRow.getCell(16).getStringCellValue();
+					//
+					// WorkParameter workParameter = new WorkParameter();
+					// workParameter.setProvince(province);
+					// workParameter.setCity(city);
+					// workParameter.setRegion(region);
+					// workParameter.setNetwork(network);
+					// workParameter.setCi((int) ci);
+					// workParameter.setWpcid((int) cid);
+					// workParameter.setLac((int) lac);
+					// workParameter.setEnodeb((int) enodeb);
+					// workParameter.setFreqChannel(freqChannel);
+					// workParameter.setCellNameEng(cellNameEng);
+					// workParameter.setCellNameCh(cellNameCh);
+					// workParameter.setCellAddress(cellAddress);
+					// workParameter.setLongitude(longitude);
+					// workParameter.setLatitude(latitude);
+					// workParameter.setBelonging(belonging);
+					// workParameter.setScene(scene);
+					// workParameter.setConverageType(converageType);
+					// if (converageType != null && converageType.equals("室内"))
+					// {
+					// workParameter.setIsIndoor(1);
+					// } else {
+					// workParameter.setIsIndoor(0);
+					// }
+					WorkParameter wp = parse2WorkParameter(hssfRow);
+					list.add(wp);
+
+				}
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * 
+	 * @param path
+	 * @param startRow
+	 *            开始读的行数
+	 * @param readSize
+	 * @return
+	 * @throws IOException
+	 */
+	public static List<WorkParameter> getExcelContent(String path, int startRow, int readSize) throws IOException {
+		List<WorkParameter> list = readExcel(path, startRow, readSize);
+		return list;
+	}
+
+}

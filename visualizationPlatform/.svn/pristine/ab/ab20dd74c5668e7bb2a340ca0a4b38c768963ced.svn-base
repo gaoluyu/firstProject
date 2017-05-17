@@ -1,0 +1,21 @@
+package androidServer.mapper;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+
+public interface LTEStatisticMapper {
+	List<Map<String, Object>> selectRsrpRsrq(
+			@Param("startTime") Timestamp start,
+			@Param("endTime") Timestamp end, @Param("mncList") String mncList,
+			@Param("buildingId") int buildingId, @Param("floor") int floor);
+	
+	List<Map<String, Object>> selectCDFbps(@Param("startTime") Timestamp start,
+			@Param("endTime") Timestamp end, @Param("mncList") String mncList,
+			@Param("buildingId") int buildingId, @Param("floor") int floor);
+
+
+
+}

@@ -1,0 +1,47 @@
+package androidServer.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.service.DBService;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/LTE")
+public class LTEStatisticController {
+	@Autowired
+	DBService dbService;
+
+	@RequestMapping("getRsrpRsrq")
+	@ResponseBody
+	Map<String, Object> getRsrpRsrq(HttpServletRequest request,
+			HttpServletResponse response, int buildingId, String network,
+			long startTime, long endTime, int floor) {
+		List<Map<String, Object>> list = dbService.getRsrpRsrqData(startTime,
+				endTime, floor, buildingId, network);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("rlist", list);
+		return data;
+	}
+	
+	@RequestMapping("getCDFData")
+	@ResponseBody
+	Map<String, Object> getCDFbps(HttpServletRequest request,
+			HttpServletResponse response, int buildingId, String network,
+			long startTime, long endTime, int floor){
+		List<Map<String, Object>> list = dbService.getCDFbpsData(startTime, endTime, floor, buildingId, network);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("cdflist", list);
+		return data;
+	}
+	
+}

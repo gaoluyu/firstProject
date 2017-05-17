@@ -1,0 +1,92 @@
+package androidServer.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.bean.IndoorBeaconRecord;
+import androidServer.bean.IndoorRecord;
+import androidServer.bean.Neighbor;
+import androidServer.bean.Sim;
+import androidServer.service.DBService;
+import androidServer.util.JSONUtil;
+
+@Controller
+@RequestMapping("/location")
+public class LocationController {
+
+	@Autowired
+	DBService dbService;
+
+	@RequestMapping("beaconList")
+	@ResponseBody
+	List<String> getAvailableBeacon(HttpServletRequest request,
+			HttpServletResponse response, String simString) {
+		System.out.println("mobile request simString \n" + simString);
+		if (simString == null)
+			return null;
+		Sim sim = JSONUtil.jsonToObject(simString, Sim.class);
+		return dbService.getBeaconList(sim);
+	}
+
+	/**
+	 * android端上传数据的接口
+	 * 
+	 * @param request
+	 * @param response
+	 * @param listRecord
+	 *            对应Indoorrecord的实体列表，但没有dl_bps和ul_bps两项
+	 * @param listBeacon
+	 *            对应indoorBeaconRecord的实体列表
+	 * @param speedList
+	 *            uuidFK,dl_bps和ul_bps三项,uuidFK对应Indoorrecord中的uuid
+	 * @return
+	 */
+	@RequestMapping("uploadIndoorRecord")
+	@ResponseBody
+	Map<String, Integer> uploadRecord(HttpServletRequest request,
+			HttpServletResponse response, String listRecord, String listBeacon,
+			String listSpeed) {
+		System.out.println(listBeacon);
+		System.out.println(listSpeed);
+		System.out.println(listRecord);
+
+		List<IndoorRecord> indoorRecords = JSONUtil.jsonToJavaList(listRecord,
+				IndoorRecord.class);
+		List<IndoorBeaconRecord> indoorBeaconRecords = JSONUtil.jsonToJavaList(
+				listBeacon, IndoorBeaconRecord.class);
+		List<Map<String, Object>> speeds = JSONUtil.jsonToJavaList(listSpeed,
+				HashMap.class);
+		// System.out.println("receive " + listObject.size());
+		boolean status = dbService.addIndoorRecords(indoorRecords,
+				indoorBeaconRecords, speeds);
+
+		Map<String, Integer> result = new HashMap<String, Integer>();
+		result.put("status", status ? 1 : 0);
+		return result;
+	}
+
+	@RequestMapping("uploadNeighbors")
+	@ResponseBody
+	Map<String, Integer> uploadNeighbor(HttpServletRequest request,
+			HttpServletResponse response, String neighbors) {
+		System.out.println(neighbors);
+
+		List<Neighbor> listObject = JSONUtil.jsonToJavaList(neighbors,
+				Neighbor.class);
+		System.out.println("receive " + listObject.size());
+		boolean status = dbService.addNeighborRecords(listObject);
+
+		Map<String, Integer> result = new HashMap<String, Integer>();
+		result.put("status", status ? 1 : 0);
+		return result;
+	}
+}

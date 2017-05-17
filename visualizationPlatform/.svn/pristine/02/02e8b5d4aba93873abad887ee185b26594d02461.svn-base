@@ -1,0 +1,176 @@
+package androidServer.controller;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.annotation.Authenticate;
+import androidServer.annotation.AuthenticatePlus;
+import androidServer.bean.WorkParameter;
+import androidServer.service.DBService;
+import androidServer.util.AuthenticateConstant;
+import androidServer.util.Constants;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/cellAdmin")
+public class CellAdminController {
+
+	@Autowired
+	DBService dbService;
+
+	/**
+	 * 批量导入工参表
+	 * 
+	 * @param request
+	 * @param response
+	 * @param filePath
+	 * @return
+	 */
+	@RequestMapping("importWP")
+	@ResponseBody
+	// @Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	@AuthenticatePlus(AuthenticateConstant.AuthenticationBit.cell_modify_bit)
+	Map<String, Object> importWP(HttpServletRequest request, HttpServletResponse response, String filePath) {
+		// System.out.println("filePath:" + filePath);
+		boolean status = dbService.insertParameter(filePath);
+		Map<String, Object> result = null;
+		if (status) {
+			result = WebUtil.okResponse(request);
+		} else {
+			result = WebUtil.errorResponse(request, WebUtil.WP_INSERT_FAILED, Constants.ErrorType.WP_INSERT_FAILED);
+		}
+		return result;
+	}
+
+	/**
+	 * 分页读取工参表数据
+	 * 
+	 * @param request
+	 * @param response
+	 * @param startPage
+	 * @param pageSize
+	 * @return
+	 */
+	@RequestMapping("loadAllWP")
+	@ResponseBody
+	// @Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	@AuthenticatePlus(AuthenticateConstant.AuthenticationBit.cell_read_bit)
+	Map<String, Object> loadAllWP(HttpServletRequest request, HttpServletResponse response, int startPage, int pageSize,
+			int ciMayDefault) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		String networkMnc = SessionUtils.getUser(request).getNetwork_mnc();
+		List<WorkParameter> list = dbService.getAllWorkParameter(province, city, startPage, pageSize, networkMnc,
+				ciMayDefault);
+		long totalCount = dbService.getWPTotalNumber(province, city, networkMnc, ciMayDefault);
+
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		data.put("totalCount", totalCount);
+		return data;
+	}
+
+	/**
+	 * 获取会话中缓存的小区信息（如果有的话）
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 */
+	@RequestMapping("getModifiedCell")
+	@ResponseBody
+	// @Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	@AuthenticatePlus(AuthenticateConstant.AuthenticationBit.cell_read_bit)
+	Map<String, Object> getModifiedCell(HttpServletRequest request, HttpServletResponse response) {
+		// first search from session key CI_TO_BE_MODIFIED and
+		// NETWORK_TO_BE_MODIFIED
+		Integer ci = SessionUtils.getAtt(request, Constants.SessionKey.CI_TO_BE_MODIFIED, Integer.class);
+		String network = SessionUtils.getAtt(request, Constants.SessionKey.NETWORK_TO_BE_MODIFIED, String.class);
+		System.out.println(ci + " " + network);
+		// second search from session key SEARCH_CI_KEY and SEARCH_NETWORK_KEY
+		if (ci == null || network == null) {
+			ci = SessionUtils.getAtt(request, Constants.SessionKey.SEARCH_CI_KEY, Integer.class);
+			network = SessionUtils.getAtt(request, Constants.SessionKey.SEARCH_NETWORK_KEY, String.class);
+
+		}
+		Map<String, Object> data = null;
+		if (ci == null || network == null || network.equals("")) {
+			data = WebUtil.errorResponse(request, WebUtil.NO_CI_MODIFIED_IN_SESSION,
+					Constants.ErrorType.NO_CI_MODIFIED_IN_SESSION);
+			return data;
+		}
+		String province = SessionUtils.getProvince(request);
+		// System.out.println("province:" + province);
+		String city = SessionUtils.getCity(request);
+		// System.out.println("ci:" + ci);
+		// System.out.println("network:" + network);
+		WorkParameter wp = dbService.getWorkParameter(province, city, ci, network);
+		// System.out.println("ci=" + wp.getCi());
+		// System.out.println("netwrok=" + wp.getNetwork());
+
+		data = WebUtil.okResponse(request);
+		data.put("cellInfo", wp);
+		return data;
+	}
+
+	@RequestMapping("insertCell")
+	@ResponseBody
+	// @Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	@AuthenticatePlus(AuthenticateConstant.AuthenticationBit.cell_modify_bit)
+	Map<String, Object> insertCell(HttpServletRequest request, HttpServletResponse response,
+			@ModelAttribute WorkParameter wp) {
+		System.out.println(wp.getNetwork());
+		boolean status = dbService.insertParameter(wp);
+		String msg;
+		if (status) {
+			msg = "插入新数据成功";
+		} else {
+			msg = "更新数据成功";
+		}
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("msg", msg);
+		return data;
+	}
+
+	@RequestMapping("deleteCell")
+	@ResponseBody
+	// @Authenticate(isStrict = true, value = Constants.Role.superAdministrator)
+	@AuthenticatePlus(AuthenticateConstant.AuthenticationBit.cell_modify_bit)
+	Map<String, Object> insertCell(HttpServletRequest request, HttpServletResponse response, int ci, String network) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		dbService.deleteParameter(province, city, ci, network);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		return data;
+	}
+
+	@RequestMapping("getProvince")
+	@ResponseBody
+	Map<String, Object> getProvince(HttpServletRequest request, HttpServletResponse response) {
+		List<String> list = dbService.getProvince();
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	@RequestMapping("getCity")
+	@ResponseBody
+	Map<String, Object> getCity(HttpServletRequest request, HttpServletResponse response, String province) {
+		List<String> list = dbService.getCity(province);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+}

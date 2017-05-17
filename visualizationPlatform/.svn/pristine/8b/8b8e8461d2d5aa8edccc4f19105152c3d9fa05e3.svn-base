@@ -1,0 +1,57 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+
+<div class="col-md-2">
+	<div class="sidebar-nav">
+		<ul class="nav nav-pills nav-stacked main-menu">
+			<li class="nav-header"><i class="glyphicon glyphicon-globe"></i>
+				站点分布</li>
+			<li><a href="./outdoor"><i
+					class="glyphicon glyphicon-asterisk"></i> 站点全景</a></li>
+			<li><a href="./indoor_map"><i
+					class="glyphicon glyphicon-home"></i> 室分地图</a></li>
+			<li><a href="./indoor_statistic"><i
+					class="glyphicon glyphicon-signal"></i> 室分图表</a></li>
+			<li><a href="./buildingStatistic"><i
+					class="glyphicon glyphicon-stats"></i> 楼宇覆盖</a></li>
+
+			<li><a href="./LTEStatistic"><i
+					class="glyphicon glyphicon-stats"></i> LTE覆盖</a></li>
+
+			<c:if test="${sessionScope.loginedUser.role==0}">
+				<li class="nav-header"><i class="glyphicon glyphicon-globe"></i>
+					室分管理</li>
+				<li><a href="./gongcanluru"><i
+						class="glyphicon glyphicon-home"></i> 小区管理</a></li>
+				<li><a href="./building"><i
+						class="glyphicon glyphicon-signal"></i>楼宇管理</a></li>
+				<li><a href="./inspectAdmin"><i
+						class="glyphicon glyphicon-home"></i>巡检管理</a></li>
+			</c:if>
+				<li class="nav-header"><i
+					class="glyphicon glyphicon-download-alt"></i> 报表管理</li>
+				<li><a href="./businessReport"><i
+						class="glyphicon glyphicon-list-alt"></i>业务报表</a></li>
+				<li><a href="./warningReport"><i
+						class="glyphicon glyphicon-bullhorn"></i>告警报表</a></li>
+			<c:if test="${sessionScope.loginedUser.role==0}">
+							<li><a href="./inspectReport"><i
+						class="glyphicon glyphicon-list">	</i>巡检报表</a></li>
+			</c:if>
+			<li class="nav-header"><i class="glyphicon glyphicon-cog"></i>
+				系统管理</li>
+			<li><a href="./userAdmin"><i
+					class="glyphicon glyphicon-user"></i> 账户管理</a></li>
+			<li><a href="./systemsetting"><i
+					class="glyphicon glyphicon-th-list"></i> 系统设置</a></li>
+
+
+			<li><a href="./message"><i
+					class="glyphicon glyphicon-eye-open"></i> 消息通知</a></li>
+			<li><a href="./aboutSystem"> <i class="glyphicon glyphicon-fire"></i>
+					关于系统
+			</a></li>
+		</ul>
+	</div>
+</div>

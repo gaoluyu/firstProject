@@ -1,0 +1,211 @@
+var warningValue;
+function reportInit(role) {
+
+	$("ul.main-menu li:eq(14)").addClass("active");
+	// $("#search").click();
+}
+function onSearch() {
+	$("#search").click(function() {
+		// printInspectList("#inspectList", "#caption");
+		// printInspectTimesReport("#inspectTimesList");
+		printInspectReport("#inspectList", "", "", 1, 10)
+	});
+	$("#export").click(function() {
+		downloadReport();
+	});
+}
+function downloadReport() {
+	ajaxUtil({
+		"startTime" : getStartTime(),
+		"endTime" : getEndTime(),
+		"buildingId" : $("#buildingSearchedId").val(),
+		"startPage" : pageNo,
+		"pageSize" : pageSize
+	}, mainpath + "/re/downInspectReport", function(response) {
+		console.log(response.url);
+		var url = response.url;
+		window.location.href = url;
+	}, function(response, reason) {
+	});
+}
+function trigger() {
+	if (getStartTime() != null && getEndTime() != null
+			&& $("#buildingSearchedId").val() != null
+			&& $("#buildingSearchedId").val().trim().length != 0) {
+		// alert("click");
+		$("#search").trigger('click');
+	}
+}
+/** 日期格式转换函数* */
+Date.prototype.toCommonCase = function() {
+	var xYear = this.getYear();
+	xYear = xYear + 1900;
+
+	var xMonth = this.getMonth() + 1;
+	if (xMonth < 10) {
+		xMonth = "0" + xMonth;
+	}
+
+	var xDay = this.getDate();
+	if (xDay < 10) {
+		xDay = "0" + xDay;
+	}
+	return xYear + "-" + xMonth + "-" + xDay;
+}
+
+/** 打印巡检报表* */
+function printInspectReport(tableId, url, data, pageNo, pageSize) {
+	ajaxUtil({
+		"startTime" : getStartTime(),
+		"endTime" : getEndTime(),
+		"buildingId" : $("#buildingSearchedId").val(),
+		"startPage" : pageNo,
+		"pageSize" : pageSize
+	}, mainpath + "/re/InspectReport", function(response) {
+		console.log(response);
+		var inspectReport = response.inspectReport;
+		var province = response.province;
+		var city = response.city;
+		var startTime = response.startTime;
+		var comStartTime = new Date(startTime);
+		comStartTime = comStartTime.toCommonCase();
+		var endTime = response.endTime;
+		var comEndTime = new Date(endTime);
+		var totalCount = 15;
+		comEndTime = comEndTime.toCommonCase();
+		var table = $(tableId);
+		var caption = $("#caption");
+		var theHtml = "<thead>"
+				+ "<tr class='active'><th>用户名</th><th>巡更日期</th><th>巡更时间</th>"
+				+ "<th>巡更地点</th><th>MAC地址</th><th>确认采集</th>" + "</tr></thead>";
+		theHtml += "<tbody>";
+		var theCaption = "<thead>" + "<tr ><th> <th>省份:</th>" + "<th>"
+				+ province + "&nbsp;&nbsp;</th>" + "<th>市地:</th>" + "<th>"
+				+ city + "&nbsp;&nbsp;</th>" + "<th>开始时间:</th>" + "<th>"
+				+ comStartTime + "&nbsp;&nbsp;</th>" + "<th>结束时间:</th>"
+				+ "<th>" + comEndTime + "&nbsp;&nbsp;</th>" + "</tr></thead>";
+		caption.html(theCaption);
+
+		for (var i = 0; i < inspectReport.length; i++) {
+			if (inspectReport[i].inspectTime == null) {
+				inspectReport[i].inspectTime = "-";
+				inspectReport[i].caiji = "否";
+			} else {
+				inspectReport[i].caiji = "是";
+			}
+
+			theHtml += "<tr>";
+			theHtml += "<td style='width:100px'>" + inspectReport[i].inspector
+					+ "</td>";
+			theHtml += "<td style='width:100px'>" + inspectReport[i].date
+					+ "</td>";
+			theHtml += "<td style='width:100px'>"
+					+ inspectReport[i].inspectTime + "</td>";
+			theHtml += "<td style='width:100px'>"
+					+ inspectReport[i].description + "</td>";
+			theHtml += "<td style='width:100px'>" + inspectReport[i].bid
+					+ "</td>";
+			theHtml += "<td style='width:100px'>" + inspectReport[i].caiji
+					+ "</td>";
+			theHtml += "</tr>";
+		}
+		theHtml += "</tbody>";
+		table.html(theHtml);
+		var totalPage = Math.ceil(totalCount / pageSize);
+		printPage(tableId, document.getElementById("paging"), totalPage, url,
+				data, pageNo, pageSize, "printInspectReport");
+		setIcRank();
+	}, function(response, reason) {
+	});
+}
+// function printInspectList(tableId, captionId) {
+// ajaxUtil({
+// "startTime" : getStartTime(),
+// "endTime" : getEndTime()
+//
+// }, mainpath + "/re/inspectReport", function(response) {
+// console.log(response);
+// var dateStringList = response.dateStringList;
+// var inspectRageReport = response.inspectRageReport;
+// var province = response.province;
+// var city = response.city;
+// var startTime = response.startTime;
+// var comStartTime = new Date(startTime);
+// comStartTime = comStartTime.toCommonCase();
+// var endTime = response.endTime;
+// var comEndTime = new Date(endTime);
+// comEndTime = comEndTime.toCommonCase();
+// var table = $(tableId);
+// var caption = $(captionId);
+// var theHtml = "<thead>" + "<tr class='active'><th
+// style='min-width:100px'>姓名</th><th style='min-width:100px'>楼宇</th>";
+// for (var j = 0; j < dateStringList.length; j++) {
+// theHtml += "<th style='min-width:100px'>" + dateStringList[j] + "</th>"
+// }
+//
+// theHtml += "</thead><tbody>";
+// var theCaption = "<thead>" + "<tr ><th> <th>省份:</th>" + "<th>"
+// + province + "&nbsp;&nbsp;</th>" + "<th>市地:</th>" + "<th>"
+// + city + "&nbsp;&nbsp;</th>" + "<th>开始时间:</th>" + "<th>"
+// + comStartTime + "&nbsp;&nbsp;</th>" + "<th>结束时间:</th>"
+// + "<th>" + comEndTime + "&nbsp;&nbsp;</th>" + "</tr></thead>";
+// caption.html(theCaption);
+// for (var i = 0; i < inspectRageReport.length; i++) {
+//
+// theHtml += "<tr>";
+// theHtml += "<td style='min-width:100px'>" + inspectRageReport[i].inspector +
+// "</td>";
+// theHtml += "<td style='min-width:100px'>" + inspectRageReport[i].buildingName
+// + "</td>";
+// for (var j = 0; j < dateStringList.length; j++) {
+// theHtml += "<td style='min-width:100px'>" +
+// inspectRageReport[i][dateStringList[j]]
+// + "个点</td>"
+// }
+//
+// }
+// theHtml += "</tr>";
+// theHtml += "</tbody>";
+// table.html(theHtml);
+// }, function(response, reason) {
+// });
+//
+// }
+// function printInspectTimesReport(tableId) {
+// ajaxUtil({
+// "startTime" : getStartTime(),
+// "endTime" : getEndTime()
+//
+// }, mainpath + "/re/inspectTimesReport", function(response) {
+// console.log(response);
+// var dateStringList = response.dateStringList;
+// var inspectTimeReport = response.inspectTimeReport;
+//
+// var table = $(tableId);
+//
+// var theHtml = "<thead>" + "<tr class='active'><th
+// style='min-width:100px'>姓名</th><th style='min-width:100px'>楼宇</th>";
+// for (var j = 0; j < dateStringList.length; j++) {
+// theHtml += "<th style='min-width:100px'>" + dateStringList[j] + "</th>"
+// }
+// theHtml += "</thead><tbody>";
+// for (var i = 0; i < inspectTimeReport.length; i++) {
+//
+// theHtml += "<tr>";
+// theHtml += "<td style='min-width:100px'>" + inspectTimeReport[i].inspector +
+// "</td>";
+// theHtml += "<td style='min-width:100px'>" + inspectTimeReport[i].buildingName
+// + "</td>";
+// for (var j = 0; j < dateStringList.length; j++) {
+// theHtml += "<td>" + inspectTimeReport[i][dateStringList[j]]
+// + "</td>"
+// }
+//
+// }
+// theHtml += "</tr>";
+// theHtml += "</tbody>";
+// table.html(theHtml);
+//
+// }, function(response, reason) {
+// });
+// }

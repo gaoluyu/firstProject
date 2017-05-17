@@ -1,0 +1,62 @@
+$(function() {
+	$("ul.main-menu li:eq(5)").addClass("active");
+});
+
+function onSearch() {
+	$("#search").click(
+			function() {
+				var requestdata = {
+					"startTime" : getStartTime(),
+					"endTime" : getEndTime(),
+					"network" : $("#networkTypeSelect").val(),
+					"buildingId" : $("#buildingSearchedId").val(),
+					"floor" : $("#floorSelector").val()
+				};
+				ajaxUtil(requestdata, mainpath + "/neighbor/getCleanTable",
+						function(response) {
+							printNeighborList(response);
+
+						}, function(response, reason) {
+						});
+			});
+}
+function printNeighborList(response) {
+	var list = response.list;
+	// var totalCount = response.totalCount;
+	var table = $("#cellTable");
+	var theHtml = "<thead><tr>"
+			+ "<th>楼名</th><th>楼层</th><th>位置</th><th>网络类型</th><th>平均场强</th>"
+			+ "<th></th><th>最小收集到的邻区数目</th><th>最大收集到的邻区数目</th>"
+			+ "<th>平均最大邻区场强</th><th>平均最大主邻区差值</th>></tr>" + "</thead>";
+	theHtml += "<tbody>"
+	for (var i = 0; i < list.length; i++) {
+		console.log(list);
+		theHtml += "<tr>";
+		theHtml += "<td>" + list[i].name + "</td>";
+		theHtml += "<td>" + list[i].floor + "</td>";
+		theHtml += "<td>" + list[i].description + "</td>";
+		theHtml += "<td>" + list[i].networkType + "</td>";
+		theHtml += "<td>" + list[i].avg_ss + "</td>";
+		theHtml += "<td>" + list[i].min_nn + "</td>";
+		theHtml += "<td>" + list[i].max_nn + "</td>";
+		theHtml += "<td>" + list[i].avg_maxNS + "</td>";
+		theHtml += "<td>" + list[i].mainNeigborGap + "</td>";
+		theHtml += "</tr>";
+	}
+	theHtml += "</tbody>";
+	table.html(theHtml);
+}
+function trigger() {
+	if (getStartTime() != null && getEndTime() != null
+			&& $("#floorSelector").val() != null
+			&& $("#floorSelector").val().trim().length != 0
+			&& $("#networkTypeSelect").val() != null
+			&& $("#networkTypeSelect").val().trim().length != 0
+			&& $("#buildingSearchedId").val() != null
+			&& $("#buildingSearchedId").val().trim().length != 0
+			&& $("#floorSelector").val() != null
+			&& $("#floorSelector").val().trim().length != 0) {
+		// alert("click");
+		$("#search").trigger('click');
+	}
+}

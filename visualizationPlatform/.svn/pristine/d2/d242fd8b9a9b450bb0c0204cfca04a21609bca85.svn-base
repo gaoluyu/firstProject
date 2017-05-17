@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.OutdoorMapper">
+	<select id="selectOutdoorMapPoints" resultType="Map" useCache="false">
+	<![CDATA[
+		select temp.*,_building.name from 
+		(select
+		AVG(i.signalStrength) as averageStrength,w.ci,i.time,i.mnc as operator,ifnull(i.networkType,'暂无网络') as netType,
+		w.province,w.city,w.longitude,w.latitude
+		from
+		workParameter w left join indoorRecord i on w.ci = i.cid and i.time>=#{timeStart} and i.time<#{timeEnd}
+		and i.mnc in (${operatorList}) and i.networkType in (${typeList})  
+		where 
+		w.isIndoor=1 and w.province=#{province} and w.city=#{city} and w.network=#{wpNetwork} 
+		group by w.ci) as temp 
+		left join 
+		(select b.name,bwp.ci 
+		from building b,buildingWorkParameter bwp where b.id=bwp.buildingId 
+		and b.province=#{province} and b.city=#{city} and bwp.network=#{wpNetwork} ) as _building 
+		on temp.ci=_building.ci group by temp.ci
+		]]>
+	</select>
+
+
+	<select id="selectHeatData" resultType="HeatData" useCache="false">
+	<![CDATA[
+		 select 
+		 signalStrength as value,
+		 Longitude as lng,
+		 Latitude as lat
+		 from location 
+		 where Longitude != 0 and Latitude != 0 and city=#{province} order by time desc
+		 limit 9000
+		]]>
+	</select>
+
+	<select id="selectHeatResult" resultType="HeatData" useCache="false">
+	<![CDATA[
+		 select 
+		 value as value,
+		 Longitude as lng,
+		 Latitude as lat
+		 from heatResult 
+		 where Longitude != 0 and Latitude != 0 and province=#{province} order by updateTime desc
+		 limit 9000
+		]]>
+	</select>
+
+
+	<insert id="updateHeatResult" parameterType="List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into HeatResult
+			(province,city,updateTime,longitude,latitude,value)
+			values
+			(#{province},#{city},#{updateTime},#{item.lng},#{item.lat},#{item.value})
+		</foreach>
+	</insert>
+
+
+	<select id="selectCenterCoordinate" resultType="Map" useCache="false">
+	<![CDATA[
+		 select 
+		 lng as lng,lat as lat 
+		 from city 
+		 where name=#{city} and pname=#{province}
+		]]>
+	</select>
+
+
+</mapper>

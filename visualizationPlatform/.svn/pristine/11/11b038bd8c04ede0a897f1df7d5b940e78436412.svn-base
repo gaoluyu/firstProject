@@ -1,0 +1,158 @@
+package androidServer.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.bean.User;
+import androidServer.bean.WorkParameter;
+import androidServer.service.DBService;
+import androidServer.util.Constants;
+import androidServer.util.SMSUtil;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("lr")
+public class LoginRegistryController {
+	@Autowired
+	DBService dbService;
+
+	/**
+	 * 验证要注册的用户名是否唯一
+	 * 
+	 * @param request
+	 * @param response
+	 * @param username
+	 * @return
+	 */
+	@RequestMapping("uniqueUsername")
+	@ResponseBody
+	public Map<String, Object> uniqueUsername(HttpServletRequest request, HttpServletResponse response,
+			String userName) {
+
+		boolean status = dbService.checkUsername(userName);
+		System.out.println(status);
+		Map<String, Object> data = new HashMap<String, Object>();
+		String msg;
+		if (status) {
+			msg = "用户名可以用";
+			data = WebUtil.okResponse(request);
+			data.put("msg", msg);
+		} else {
+			msg = "用户名重复";
+			data = WebUtil.errorResponse(request, WebUtil.UERSNAME_NOT_UNIKUE, Constants.ErrorType.UERSNAME_NOT_UNIKUE); // 是否还要添加新的信息
+			data.put("msg", msg);
+		}
+		return data;
+	}
+
+	/**
+	 * 登录 验证用户名和密码 在session里的加入province,city,username
+	 * 
+	 * @param request
+	 * @param response
+	 * @param username
+	 * @param password
+	 * @return
+	 */
+	@RequestMapping("login")
+	@ResponseBody
+	public Map<String, Object> login(HttpServletRequest request, HttpServletResponse response, String username,
+			String password) {
+		System.out.println(username + "\n" + password);
+		Map<String, Object> data = new HashMap<String, Object>();
+		User user = dbService.selectUser(username);
+		if (user != null && user.getPassword().equals(password)) {
+			SessionUtils.setUser(request, user);
+			SessionUtils.setProvince(request, user.getProvince());
+			SessionUtils.setCity(request, user.getCity());
+			data = WebUtil.okResponse(request);
+			data.put("msg", "登录成功");
+		} else {
+			data = WebUtil.errorResponse(request, WebUtil.ERROR, "登陆失败");
+		}
+		return data;
+	}
+
+	/**
+	 * 发送手机验证码
+	 * 
+	 * @param request
+	 * @param response
+	 * @param telephone
+	 * @return
+	 */
+	@RequestMapping("phoneCode")
+	@ResponseBody
+	public Map<String, Object> phoneCode(HttpServletRequest request, HttpServletResponse response, String telephone) {
+		System.out.println(telephone);
+		String code = SMSUtil.sendValidateCode(telephone);
+		SessionUtils.putPhoneCode(request, code);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		return data;
+	}
+
+	/**
+	 * 注册 验证手机号和验证码 插入数据库
+	 * 
+	 * @param request
+	 * @param response
+	 * @param user
+	 * @param code
+	 * @return
+	 */
+	@RequestMapping("registry")
+	@ResponseBody
+	public Map<String, Object> registry(HttpServletRequest request, HttpServletResponse response,
+			@ModelAttribute User user, String code) {
+
+		//String phoneCodeInSession = SessionUtils.getPhoneCode(request);
+		String phoneCodeInSession = "666666";
+		// System.out.println(code);
+		Map<String, Object> data = new HashMap<String, Object>();
+		String msg;
+		if (code.equals(phoneCodeInSession)) {
+			boolean status = dbService.insertUser(user);
+			boolean insertStatus = dbService.insertInitialSetting(user);												
+			msg = "注册成功";
+			data = WebUtil.okResponse(request);
+			
+		} else {
+			msg = "注册失败,验证码不对";
+			data = WebUtil.errorResponse(request, WebUtil.CODE_UNIKUE, Constants.ErrorType.CODE_UNIKUE);
+		}
+		data.put("msg", msg);
+		return data;
+	}
+	
+	@RequestMapping("getProvince")
+	@ResponseBody
+	Map<String, Object> getProvince(HttpServletRequest request,
+			HttpServletResponse response) {
+		List<String> list = dbService.getProvince();
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	@RequestMapping("getCity")
+	@ResponseBody
+	Map<String, Object> getCity(HttpServletRequest request,
+			HttpServletResponse response, String province) {
+		List<String> list = dbService.getCity(province);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+}

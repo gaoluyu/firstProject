@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.BuildingStatisticMapper">
+	<select id="selectCoverageRatio" resultType="Map">
+		select network as network,ifnull(number,0) as number
+		from networkList
+		left join
+		(
+		select
+		CASE
+		WHEN networkType in
+		('EDGE','GPRS','CDMA','1xRTT','IDEN')
+		THEN
+		'2G'
+		WHEN networkType in
+		('UMTS','EVDO_0','EVDO_A','HSDPA','HSPA','HSPAP','HSUPA','EVDO_B','EHRPD')
+		THEN '3G'
+		WHEN networkType in ('LTE') THEN '4G'
+		end as
+		_networkType,i.cid ,
+		count(i.cid) as number
+		from
+		indoorrecord i ,beacon b
+		<if test="isLocalCid == true">
+			,buildingworkparameter bwp
+		</if>
+		where
+		<![CDATA[ 
+		i.time >=#{startTime} and i.time <#{endTime} 
+		]]>
+		and i.cid !=0 and i.position
+		!='暂无设备' and i.mnc in (${mncList})
+		and
+		i.position=b.id and b.building=#{buildingId} and b.inUse=1
+		<if test="floor!=0">
+			and b.floor=#{floor}
+		</if>
+		<if test="isLocalCid == true">
+			and b.building=bwp.buildingId and i.cid=bwp.ci
+		</if>
+		group by _networkType
+		)
+		as
+		temp
+		on networkList.network=temp._networkType
+	</select>
+
+	<select id="selectWarningNumber" resultType="Map">
+		select networkList.network as network,ifnull(number,0) as number
+		from
+		networkList left join
+		(
+		select netType ,count(signalStrength) as number
+		from usersetting us,
+		(
+		select
+		CASE
+		WHEN networkType in
+		('EDGE','GPRS','CDMA','1xRTT','IDEN')
+		THEN
+		'2G'
+		WHEN networkType in
+		('UMTS','EVDO_0','EVDO_A','HSDPA','HSPA','HSPAP','HSUPA','EVDO_B','EHRPD')
+		THEN '3G'
+		WHEN networkType in ('LTE') THEN '4G'
+		end as
+		_networkType,i.cid ,
+		signalStrength
+		from
+		indoorrecord i ,beacon b
+		where
+		<![CDATA[ 
+		i.time >=#{startTime} and i.time <#{endTime} 
+		]]>
+		and i.cid !=0 and i.position !='暂无设备' and i.mnc in (${mncList})
+		and
+		i.position=b.id and b.building=#{buildingId} and b.inUse=1
+		<if test="floor!= 0">
+			and b.floor=#{floor}
+		</if>
+		) as temp
+		where us.userId=#{userId} and us.operator=#{operator} and
+		_networkType=us.netType 
+		<![CDATA[ 
+		and signalStrength < us.warningValue
+		]]>
+		group by netType
+		) as temp2
+		on networkList.network=temp2.netType
+	</select>
+
+	<select id="selectBuildingLike" resultType="Map">
+		select id as
+		value,CONCAT(name,' (id= ',id,')') as label
+		from building
+		where
+		province
+		= #{province} and
+		city=#{city} and name like #{buildingName}
+	</select>
+
+	<select id="selectCidNum" resultType="Map">
+		select
+		CASE
+		WHEN networkType in
+		('EDGE','GPRS','CDMA','1xRTT','IDEN')
+		THEN
+		'2G'
+		WHEN
+		networkType in
+		('UMTS','EVDO_0','EVDO_A','HSDPA','HSPA','HSPAP','HSUPA','EVDO_B','EHRPD')
+		THEN '3G'
+		WHEN networkType in ('LTE') THEN '4G'
+		end as
+		_networkType,i.cid,count(i.cid) as number
+		from
+		indoorrecord i ,beacon b
+		where
+		<![CDATA[ 
+		i.time >=#{startTime} and i.time <#{endTime} 
+		]]>
+		and i.cid !=0 and i.position
+		!='暂无设备' and i.mnc in (${mncList})
+		and
+		i.position=b.id and b.building=#{buildingId}  and b.inUse=1
+		<if test="floor!=0">
+			and b.floor=#{floor}
+		</if>
+		group by _networkType,i.cid
+	</select>
+
+</mapper>

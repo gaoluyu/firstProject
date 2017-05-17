@@ -1,0 +1,159 @@
+var mainpath;
+function reportInit(role){
+	if(role==-1){
+		$("ul.main-menu li:eq(16)").addClass("active");
+	}else{
+		$("ul.main-menu li:eq(10)").addClass("active");
+	}
+}
+function init(_mainpath) {
+	mainpath = _mainpath;
+	loadUserInfo();
+	getUserSetting();
+	getCoverageSetting();
+	getNetworkList();// 获取信号质量等级列表
+}
+
+function loadUserInfo() {
+	ajaxUtil({}, mainpath + '/userAdmin/userInfo', function(response) {
+		var list = response.User;
+		var province = list.province;
+		var city = list.city;
+		var username = list.username;
+		var telephone = list.telephone;
+		var html = "<dt>用户名</dt><dd>" + username + "</dd><br/>";
+		html += "<dt>省份</dt><dd>" + province + "</dd><br/>";
+		html += "<dt>市地</dt><dd>" + city + "</dd><br/>";
+		html += "<dt>手机号</dt><dd>" + telephone + "</dd><br/>";
+		$("#userInfo").html(html);
+	}, function(response, reason) {
+		alert(reason);
+	});
+}
+
+function getUserSetting() {
+	ajaxUtil({}, mainpath + '/userAdmin/getUserSetting', function(response) {
+		var list = response.list;
+		var html = "";
+		var newlist = [];
+		for (var i = 0; i < list.length; i++) {
+			// 将运营商的两个字段合并成一个，是为了方便与types查询匹配
+			var netType = list[i].netType;
+			var operator = list[i].operator;
+			var warningValue = list[i].warningValue;
+			var type = operator + "|" + netType;
+			html += "<dt>" + type + "</dt><dd>" + warningValue
+					+ "dBm</dd><br/>";
+		}
+		$("#warningValueBox").html(html);
+	}, function(response, reason) {
+		alert(reason);
+	});
+}
+function getCoverageSetting() {
+	ajaxUtil({}, mainpath + '/userAdmin/getCoverageSetting',
+			function(response) {
+				var list = response.CoverageList;
+				console.log(list);
+				var html = "";
+				for (var i = 0; i < 1; i++) {
+					var coverageRatio = list[i].coverageRatio;
+					html += "<dt>2G/3G/4G</dt><dd>" + coverageRatio
+							+ "%</dd><br/>";
+				}
+				$("#CoverageList").html(html);
+			}, function(response, reason) {
+				alert(reason);
+			});
+}
+function getNetworkList() {
+	ajaxUtil({}, mainpath + '/userAdmin/getNetworkList', function(response) {
+		var list = response.NetworkList;
+		console.log(list);
+		var html = "<thead>"
+				+ "<tr class='active'><th>网络类型</th><th>绿色最低场强（dBm）</th><th>蓝色最低场强（dBm）</th>"
+				+ "<th>黄色最低场强(dBm)</th><th>红色最低场强(dBm)";
+		html += "<tbody>"
+		 for (var i = 0; i < list.length; i++) {
+			 var network = list[i].network;
+		 var green_bottom = list[i].green_bottom;
+		 var blue_bottom = list[i].blue_bottom;
+		 var yellow_bottom = list[i].yellow_bottom;
+		 var red_bottom = list[i].red_bottom;
+		 html += "<tr><td>"+network+"</td><td>"+green_bottom+"</td><td>"+blue_bottom+"</td><td>"+yellow_bottom+"</td><td>"+red_bottom+"</td></tr>";
+		 }
+		html+="</tbody>"
+		$("#NetworkList").html(html);
+	}, function(response, reason) {
+		alert(reason);
+	});
+}
+function submit() {
+	ajaxUtil({
+		"oldpassword" : $("#oldpassword").val(),
+		"newpassword" : $("#ps").val()
+	}, mainpath + "/userAdmin/modifyPassword", function(response) {
+		alert(response.msg);
+		window.location.href = "./login";
+	}, function(response, reason) {
+		alert(response.msg);
+	});
+}
+function motify() {
+	window.location.href = mainpath + "/page/systemsetting";
+}
+function Word() {
+	var filter = /^\s*[.A-Za-z0-9_-]{6,18}\s*$/;
+	var PassWord = $("#ps").val();
+	var oldPassWord = $("#oldpassword").val();
+	if (PassWord != oldPassWord) {
+		if (!filter.test(PassWord)) {
+			$("#Pass").html("密码格式不正确，请使用6-18位字母和数字及下划线，注意不要使用空格");
+			$("#Pass").prepend(
+					"<span class='glyphicon glyphicon-remove'></span>");
+			$("#Pass").css("color", "red");
+			$("#Pass").css("font-size", "small");
+			return false;
+		} else {
+			$("#Pass").html("该密码可用");
+			$("#Pass").prepend("<span class='glyphicon glyphicon-ok'></span>");
+			$("#Pass").css("color", "green");
+			$("#Pass").css("font-size", "small");
+			return true;
+		}
+	} else {
+		$("#Pass").html("该密码与原密码相同，请重新填写");
+		$("#Pass").prepend("<span class='glyphicon glyphicon-remove'></span>");
+		$("#Pass").css("color", "red");
+		$("#Pass").css("font-size", "small");
+		return false;
+	}
+}
+function Re_Word() {
+	var re_PassWord = $("#reps")[0].value;
+	var PassWord = $("#ps")[0].value;
+	if (Word() == true) {
+		if (re_PassWord != PassWord) {
+			$("#Re_Pass").html("两次输入密码不一致，请重新填写");
+			$("#Re_Pass").prepend(
+					"<span class='glyphicon glyphicon-remove'></span>");
+			$("#Re_Pass").css("color", "red");
+			$("#Re_Pass").css("font-size", "small");
+			return false;
+		} else {
+			$("#Re_Pass").html("两次密码输入一致");
+			$("#Re_Pass").prepend(
+					"<span class='glyphicon glyphicon-ok'></span>");
+			$("#Re_Pass").css("color", "green");
+			$("#Re_Pass").css("font-size", "small");
+			return true;
+		}
+	} else {
+		$("#Re_Pass").html("请确认第一遍密码输入是否符合规范");
+		$("#Re_Pass").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Re_Pass").css("color", "red");
+		$("#Re_Pass").css("font-size", "small");
+		return false;
+	}
+}

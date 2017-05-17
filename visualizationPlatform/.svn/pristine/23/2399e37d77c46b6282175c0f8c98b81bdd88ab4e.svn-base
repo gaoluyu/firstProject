@@ -1,0 +1,110 @@
+package androidServer.controller;
+
+import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.ModelAndView;
+
+import androidServer.bean.Beacon;
+import androidServer.service.DBService;
+import androidServer.util.Constants;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+public class PageController {
+
+	@Autowired
+	DBService dbService;
+
+	@RequestMapping(value = "/page/editCell")
+	ModelAndView pageEditCell(HttpServletRequest request,
+			HttpServletResponse reponse,
+			@RequestParam(value = "ci", defaultValue = "-1") int ci,
+			@RequestParam(value = "network", defaultValue = "") String network) throws UnsupportedEncodingException {
+		if (ci != -1 && !network.equals("")) {
+			SessionUtils.addAtt(request,
+					Constants.SessionKey.CI_TO_BE_MODIFIED, new Integer(ci));
+			SessionUtils.addAtt(request,
+					Constants.SessionKey.NETWORK_TO_BE_MODIFIED, network);
+			
+		}
+		return new ModelAndView("editCell");
+	}
+
+	@RequestMapping(value = "/page/editBuilding")
+	ModelAndView editBuilding(HttpServletRequest request,
+			HttpServletResponse reponse,
+			@RequestParam(value = "id", defaultValue = "-1") int id, String unit) {
+		if (id != -1) {
+			SessionUtils.addAtt(request,
+					Constants.SessionKey.BUILDING_TO_BE_MODIFIED, id);
+		}
+		return new ModelAndView("editBuilding");
+	}
+
+	/**
+	 * id=-1时，尝试从session中取值
+	 * 
+	 * @param request
+	 * @param reponse
+	 * @param id
+	 *            buildingId
+	 * @param unit
+	 * @return
+	 */
+	@RequestMapping(value = "/page/beacon")
+	ModelAndView editBeacon(HttpServletRequest request,
+			HttpServletResponse reponse,
+			@RequestParam(value = "id", defaultValue = "-1") int id) {
+		if (id != -1)
+			SessionUtils.addAtt(request,
+					Constants.SessionKey.BEACON_IN_BUILDING, id);
+
+		return new ModelAndView("beacon");
+	}
+
+	@RequestMapping(value = "/page/editBeacon")
+	ModelAndView editBeacon(HttpServletRequest request,
+			HttpServletResponse reponse, String mac) {
+		if (mac != null)
+			SessionUtils.addAtt(request,
+					Constants.SessionKey.BEACON_TO_BE_MODIFIED, mac);
+		return new ModelAndView("editBeacon");
+	}
+
+	@RequestMapping(value = "/page/addBeacon")
+	ModelAndView editBeacon(HttpServletRequest request,
+			HttpServletResponse reponse) {
+		Integer buildingId = SessionUtils.getAtt(request,
+				Constants.SessionKey.BEACON_IN_BUILDING, Integer.class);
+
+		Map<String, Object> map = WebUtil.okResponse(request);
+		map.put("buildingId", buildingId);
+		return new ModelAndView("addBeacon", map);
+	}
+
+	@RequestMapping(value = "/page/logout")
+	ModelAndView logout(HttpServletRequest request, HttpServletResponse reponse) {
+		SessionUtils.removeUser(request);
+		return new ModelAndView("login");
+	}
+
+	@RequestMapping(value = "/page/**")
+	ModelAndView page(HttpServletRequest request, HttpServletResponse reponse) {
+		String url = request.getRequestURI();
+		int index = url.indexOf("page/");
+		String page = url.substring(index + 5);
+		return new ModelAndView(page);
+	}
+
+}

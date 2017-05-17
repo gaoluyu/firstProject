@@ -1,0 +1,38 @@
+function onSearch() {
+
+	$("#search").click(
+			function() {
+				var requestdata = {
+					"startTime" : getStartTime(),
+					"endTime" : getEndTime(),
+					"network" : $("#networktype").val(),
+					"buildingId" : $("#buildingSearchedId").val(),
+					"floor" : $("#floorSelector").val()
+				};
+				ajaxUtil(requestdata, mainpath
+						+ "/LTE/getRsrpRsrq", function(response) {
+					
+					//散点图
+					console.log(JSON.stringify(response));
+					
+					
+				}, function(response, reason) {
+				});
+				ajaxUtil(requestdata, mainpath
+						+ "/LTE/getCDFData", function(response) {
+					
+					//散点图
+					console.log(JSON.stringify(response));
+					
+					
+				}, function(response, reason) {
+				});
+				
+			});
+}
+
+function drawPoints(response){
+	
+}
+
+

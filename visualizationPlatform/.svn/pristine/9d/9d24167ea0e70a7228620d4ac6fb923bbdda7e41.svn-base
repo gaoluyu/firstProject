@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.UserMapper">
+
+	<select id="checkingUsername" resultType="String">
+		select username from
+		user
+		where username=#{username}
+	</select>
+
+	<select id="selectUser" resultType="User">
+		select * from user
+		where
+		username=#{username}
+	</select>
+
+	<insert id="insertingUser" parameterType="User">
+
+		insert into
+		User
+		(username,password,telephone,province,city,isAdmin)
+		values
+		(#{item.username},#{item.password},#{item.telephone},#{item.province},#{item.city},0)
+
+	</insert>
+
+	<insert id="initialCoveRatio" parameterType="User">
+		insert into
+		usersetting
+		(userId,operator,netType,province,city,coverageRatio)
+		values
+		(#{item.username},#{operator},#{netType},#{item.province},#{item.city},#{coverageRatio})
+	</insert>
+
+	<update id="initialWarningValue">
+		update usersetting
+		set warningValue=#{warningValue}
+		where userId=#{username} and netType=#{netType}
+	</update>
+
+	<update id="modifyPassword">
+		update user
+		set
+		password=#{newpassword}
+		where username=#{username}
+	</update>
+
+	<select id="getUserSetting" resultType="map">
+		select operator as
+		operator,
+		netType as netType,
+		warningValue as warningValue
+		from
+		usersetting
+		where userId=#{username}
+	</select>
+
+	<select id="getSettingValue" resultType="map">
+		select
+		warningValue,CONCAT(operator,netType) netType
+		from usersetting
+		where
+		userId=#{username}
+	</select>
+
+	<insert id="updateUserSetting" parameterType="List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into usersetting
+			(userId,operator,netType,province,city,warningValue)
+			values
+			(#{username},#{item.operator},#{item.netType},#{province},#{city},#{item.warningValue})
+			on DUPLICATE key UPDATE
+			warningValue=#{item.warningValue}
+		</foreach>
+	</insert>
+
+	<select id="getMessage" resultType="map">
+		select cid as cid, operator
+		as operator,
+		netType as netType,value as value,
+		startTime as statrTime,
+		endTime as endTime,
+		isRead as isRead, id as id
+		from warningbox
+		where toUserId=#{username}
+		order by isRead,startTime desc
+		limit
+		#{itemStart},#{offset}
+	</select>
+
+	<select id="getMessageDetail" resultType="map">
+		select w.*,b.*,bi.*
+		from warningbox w, beacon b ,building bi
+		where w.position = b.id and
+		w.buildingId = bi.id and toUserId=#{username} and w.id=#{id}
+	</select>
+
+	<update id="modifyMark">
+		update warningbox
+		set isRead=#{mark}
+		where id=#{id} and
+		toUserId=#{username}
+	</update>
+
+	<select id="getNetworkWarningValue" resultType="Integer">
+		select warningValue from
+		(select warningValue,concat(operator,netType) netType from usersetting where
+		userId=#{username}) newTable
+		where newTable.netType=#{netType}
+	</select>
+
+	<select id="getWarningBottom" resultType="Map">
+		select red_bottom as
+		red_bottom,yellow_bottom as yellow_bottom,
+		blue_bottom as
+		blue_bottom,green_bottom as green_bottom
+		from networklist
+		where
+		network=#{netType}
+	</select>
+
+	<select id="getRedBottom" resultType="Map">
+		select network as network,
+		red_bottom as red_bottom
+		from networklist
+	</select>
+
+	<select id="getCoverageSetting" resultType="Map">
+		select DISTINCT
+		netType as netType,coverageRatio as coverageRatio
+		from usersetting
+		where userId=#{username}
+	</select>
+
+	<insert id="updateCoverageSetting">
+		update usersetting
+		set coverageRatio=#{coverageRatio}
+		where userId=#{username}
+	</insert>
+
+	<select id="getNetworkList" resultType="Map">
+		select network as
+		network,
+		red_bottom as red_bottom,yellow_bottom as yellow_bottom,
+		blue_bottom as blue_bottom,green_bottom as green_bottom
+		from
+		networklist
+	</select>
+
+	<insert id="updateNetworklist" parameterType="List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into networklist
+			(network,red_bottom,yellow_bottom,blue_bottom,green_bottom)
+			values
+			(#{item.network},#{item.red_bottom},#{item.yellow_bottom},#{item.blue_bottom},#{item.green_bottom})
+			on DUPLICATE key UPDATE
+			red_bottom=#{item.red_bottom},yellow_bottom=#{item.yellow_bottom},blue_bottom=#{item.blue_bottom},green_bottom=#{item.green_bottom}
+		</foreach>
+	</insert>
+
+	<select id="getNetworkCoverageRatio" resultType="Map">
+		select
+		CONCAT(operator,netType) network ,coverageRatio
+		from usersetting
+		where
+		userId=#{username} and CONCAT(operator,netType)=#{network}
+	</select>
+
+</mapper>

@@ -1,0 +1,51 @@
+a {
+	color: #27541b;
+	text-decoration: none;
+}
+
+
+
+ul.main-menu li.active {
+	background-color: #89ca30;
+}
+
+ul.main-menu li.active a, .main-menu li.active a:hover, .main-menu li.active a:focus
+	{
+	background-color: #89ca30;
+}
+
+.navbar-bg {
+	background-image: -webkit-linear-gradient(#405B1D, #30571C 60%, #27541b);
+	background-image: linear-gradient(#405B1D, #30571C 60%, #27541b);
+}
+
+
+
+.tab {
+	color: #89ca30;
+}
+
+
+
+
+.page a.current {
+	background: #89ca30;
+}
+
+
+a.upload_btn {
+	background: #89ca30;
+}
+
+a.upload_btn:hover {
+	background: #89ca30;
+}
+
+.btn-info {
+    background-color: #99CC66;
+    border-color: #99CC66;
+}
+.btn-info:hover, .btn-info:focus, .btn-info:active, .btn-info.active, .open>.dropdown-toggle.btn-info {
+    background-color: #89ca30;
+    border-color: #89ca30;
+}

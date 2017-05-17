@@ -1,0 +1,172 @@
+package androidServer.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.bean.IndoorDate;
+import androidServer.bean.IndoorList;
+import androidServer.service.DBService;
+import androidServer.util.Constants;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/indoor")
+public class IndoorController {
+
+	@Autowired
+	DBService dbService;
+
+	@RequestMapping("indoorMap")
+	@ResponseBody
+	Map<String, Object> getIndoorMap(HttpServletRequest request, HttpServletResponse response, long startTime,
+			long endTime, int floor, int building, int ci, String network) {
+		List<Map<String, Object>> list = null;
+		if (network == null)
+			list = null;
+		else
+			list = dbService.getIndoorMapPoints(startTime, endTime, floor, building, ci, network);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	@RequestMapping("totalBeacon")
+	@ResponseBody
+	Map<String, Object> getIndoorMap(HttpServletRequest request, HttpServletResponse response, int floor, int building,
+			String network) {
+		// String province = SessionUtils.getProvince(request);
+		// String city = SessionUtils.getCity(request);
+		long number = dbService.getBeaconTotalNumber(floor, building);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("totalCount", number);
+		return data;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param startTime
+	 * @param endTime
+	 * @param floor
+	 * @param building
+	 * @param ci
+	 * @param startPage
+	 *            显示第几页
+	 * @param pageSize
+	 *            每页显示的数目
+	 * @return
+	 */
+	@RequestMapping("indoorList")
+	@ResponseBody
+	Map<String, Object> getIndoorList(HttpServletRequest request, HttpServletResponse response, long startTime,
+			long endTime, int floor, int building, int ci, int startPage, int pageSize, String network) {
+		// String province = SessionUtils.getProvince(request);
+		// String city = SessionUtils.getCity(request);
+		List<IndoorList> list = null;
+		if (network != null)
+			list = dbService.getIndoorList(startTime, endTime, floor, building, ci, startPage, pageSize, network);
+		long totalNumber = dbService.getBeaconTotalNumber(floor, building);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		data.put("totalCount", totalNumber);
+		return data;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param startTime
+	 * @param endTime
+	 * @param floor
+	 * @param building
+	 * @return
+	 */
+	@RequestMapping("beaconCurve")
+	@ResponseBody
+	Map<String, Object> getBeaconCurve(HttpServletRequest request, HttpServletResponse response, long startTime,
+			long endTime, String beaconId, int ci, String network) {
+		List<IndoorDate> list = null;
+		if (network == null)
+			list = null;
+		else
+			list = dbService.getBeaconCurve(startTime, endTime, beaconId, ci, network);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @return ("name","buildingId","ci")
+	 */
+	@RequestMapping("loadCell")
+	@ResponseBody
+	Map<String, Object> loadBuilding(HttpServletRequest request, HttpServletResponse response) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		List<Map<String, String>> list = dbService.getBuilding(province, city);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	/**
+	 * ("floorUpGround" "floorUnderGround")
+	 * 
+	 * @param request
+	 * @param response
+	 * @param buildingId
+	 * @return
+	 */
+	@RequestMapping("loadFloor")
+	@ResponseBody
+	Map<String, Object> loadFloor(HttpServletRequest request, HttpServletResponse response, int buildingId, int ci) {
+		Map<String, Long> floor = dbService.getFloor(buildingId, ci);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("floor", floor);
+		return data;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param buildingId
+	 * @return
+	 */
+	@RequestMapping("mapUrl")
+	@ResponseBody
+	Map<String, Object> mapUrl(HttpServletRequest request, HttpServletResponse response, int buildingId) {
+		List<Map<String, Object>> list = dbService.getBuildingMap(buildingId);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	/**
+	 * 获取session中的数据
+	 * 
+	 * @param request
+	 * @param response
+	 * @return
+	 */
+	@RequestMapping("dataInSession")
+	@ResponseBody
+	Map<String, Object> getDataInSession(HttpServletRequest request, HttpServletResponse response) {
+		return WebUtil.okResponse(request);
+	}
+
+}

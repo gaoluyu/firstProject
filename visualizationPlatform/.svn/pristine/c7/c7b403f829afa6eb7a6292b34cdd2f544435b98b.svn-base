@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.InspectAdminMapper">
+
+	<select id="selectImsi" resultType="Map" useCache="false">
+		SELECT s.imsi
+		as imsi, s.phoneNumber as phoneNumber
+		FROM indoorrecord i,beacon b,sim
+		s
+		WHERE b.building=#{building} AND b.inUse='1' AND b.id=i.position AND
+		i.imsi=s.imsi
+		GROUP BY i.imsi
+	</select>
+
+	<select id="selectImsiStatic" resultType="Map" useCache="false">
+		select b.floor,COUNT(cid) as num,
+		i.position,CONCAT(b.floor,b.description) AS name, x,y,i.imsi
+		FROM
+		indoorrecord i, beacon b
+		WHERE b.building=#{building}
+		AND
+		i.position=b.id
+		AND i.imsi=#{imsi} 
+		<![CDATA[
+		AND i.time>=#{timeStartTS} AND i.time<=#{timeEndTS} ]]>
+		group by b.floor ,i.position
+		order by floor ASC,num desc;
+	</select>
+
+	<select id="selectPositionByDate" resultType="Map" useCache="false">
+		select CONCAT(YEAR(time),"-",MONTH(time),"-",DAYOFMONTH(time)) as
+		date,count(DISTINCT position) as num FROM
+		indoorrecord i,beacon b
+		where
+		b.building=#{building} and 
+		<![CDATA[
+		time>=#{timeStartTS} and time<#{timeEndTS} and imsi=#{imsi}
+		and
+		]]>
+		i.position=b.id
+		group by date
+		order by time
+	</select>
+
+	<select id="selectPositionBoxPlotByDate" resultType="Map"
+		useCache="false">
+		select date,max(num) as maxNum,min(num) as minNum,AVG(num) as
+		avgNum
+		from (
+		select
+		CONCAT(YEAR(time),"-",MONTH(time),"-",DAYOFMONTH(time)) as
+		date,position, count(position) as num,time as orderField FROM
+		indoorrecord i,beacon b
+		where
+		b.building=#{building} and
+		<![CDATA[
+		time>=#{timeStartTS} and time<#{timeEndTS} and imsi=#{imsi}
+		and
+		]]>
+		i.position=b.id
+		group by date,position
+		) AS t
+		group by date order by
+		orderField
+	</select>
+
+	<insert id="insertKeepAliveLocation" parameterType="KeepAliveLocation">
+		insert into
+		keepAliveLocation
+		(inspector,province,city,longitude,latitude,poi,time)
+		values
+		(#{kal.inspector},#{kal.province},#{kal.city},#{kal.longitude},#{kal.latitude},#{kal.poi},#{kal.time})
+	</insert>
+
+	<select id="selectUserNameExist" resultType="Map" useCache="false">
+
+		select username as username from inspector where username=#{userName}
+
+	</select>
+
+</mapper>

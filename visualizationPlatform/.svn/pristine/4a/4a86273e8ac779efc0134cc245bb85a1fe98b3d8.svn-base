@@ -1,0 +1,19 @@
+package androidServer.mapper;
+
+import java.util.List;
+
+import org.apache.ibatis.annotations.Param;
+
+import androidServer.bean.IndoorRecord;
+import androidServer.bean.Neighbor;
+
+public interface BeaconMapper {
+
+	List<String> getAvailableBeaconList();
+
+	long getTotalBeaconNumber(@Param("floor") int floor, @Param("building") int building);
+
+	int insertIndoor(List<IndoorRecord> list);
+
+	int insertNeighbor(List<Neighbor> list);
+}

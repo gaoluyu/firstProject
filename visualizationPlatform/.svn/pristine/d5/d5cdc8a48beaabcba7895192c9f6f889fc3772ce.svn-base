@@ -1,0 +1,99 @@
+var mainpath;
+
+function uploadInit(mainPath) {
+	mainpath = mainPath;
+	$("#upload").click(
+			function() {
+				// alert("up!");
+				ajaxUploadUtil(mainpath + '/excelUpload.do', 'cellUpload',
+						function(response) {
+							alert(JSON.stringify(response));
+							var filePath = response.filePath;
+							ajaxUtil({
+								"filePath" : filePath
+							}, mainpath + '/cellAdmin/importWP', function(
+									response) {
+								alert("导入成功");
+							}, function(response, reason) {
+								alert(reason);
+							});
+						}, function(response, reason) {
+							alert(reason);
+						});
+			});
+	printWPList("#workparameterTable", "", "", 1, 10);
+}
+
+function printWPList(tableId, url, data, pageNo, pageSize) {
+	ajaxUtil(
+			{
+				"startPage" : pageNo,
+				"pageSize" : pageSize
+			},
+			mainpath + "/cellAdmin/loadAllWP",
+			function(response) {
+				var list = response.list;
+				var totalCount = response.totalCount;
+				var table = $(tableId);
+				var theHtml = "<thead>"
+						+ "<tr><th>#</th><th>省份</th>"
+						+ "<th>市地</th><th>网络类型</th><th>小区CI</th><th>LAC</th>"
+						+ "<th>频段</th><th>小区英文名称</th><th>小区中文名称</th>"
+						+ "<th>小区地址</th><th>经度</th><th>纬度</th>"
+						+ "<th>归属区域</th><th>覆盖场景</th><th>覆盖类型</th><th>设置</th></tr>";
+				theHtml += "<tbody>"
+				for (var i = 0; i < list.length; i++) {
+					theHtml += "<tr>";
+					theHtml += "<th scope='row'>" + (i + 1) + "</th>";
+					theHtml += "<td>" + list[i].province + "</td>";
+					theHtml += "<td>" + list[i].city + "</td>";
+				    theHtml += "<td>" + list[i].network + "</td>";
+					theHtml += "<td>" + list[i].ci + "</td>";
+					theHtml += "<td>" + list[i].lac + "</td>";
+					theHtml += "<td>" + list[i].freqChannel + "</td>";
+					theHtml += "<td>" + list[i].cellNameEng + "</td>";
+					theHtml += "<td>" + list[i].cellNameCh + "</td>";
+					theHtml += "<td>" + list[i].cellAddress + "</td>";
+					theHtml += "<td>" + list[i].longitude + "</td>";
+					theHtml += "<td>" + list[i].latitude + "</td>";
+					theHtml += "<td>" + list[i].belonging + "</td>";
+					theHtml += "<td>" + list[i].scene + "</td>";
+					theHtml += "<td>" + list[i].converageType + "</td>";
+					theHtml += "<td><a href='javascript: modifyCell("
+							+ list[i].ci+",\""+list[i].network
+							+ "\")'> <i class=\"glyphicon glyphicon-ban-circle\"></i>"
+							+ "<span>修改</span></a>"
+							+ " <a href='javascript: deleteCell("
+							+ list[i].ci+",\""+list[i].network
+							+ "\")'> <i class=\"glyphicon glyphicon-trash\"></i> <span>删除</span>"
+							+ "</a></td>";
+					theHtml += "</tr>";
+				}
+				theHtml += "</tbody>";
+				table.html(theHtml);
+				var totalPage = Math.ceil(totalCount / pageSize);
+				printPage(tableId, document.getElementById("paging"),
+						totalPage, url, data, pageNo, pageSize, "printWPList");
+				setIcRank();
+			}, function(response, reason) {
+				alert(reason);
+			});
+}
+
+function modifyCell(ci,network) {
+	window.location.href = mainpath + "/page/editCell?ci=" + ci+"&network="+ network;
+}
+function deleteCell(ci,network) {
+
+	ajaxUtil({
+		"ci" : ci,
+		"network" : network
+	}, mainpath + '/cellAdmin/deleteCell', function(response) {
+		alert("删除成功");
+		window.location.href = mainpath + "/page/gongcanluru";
+	}, function(response, reason) {
+		alert(reason);
+		window.location.href = mainpath + "/page/gongcanluru";
+	});
+
+}

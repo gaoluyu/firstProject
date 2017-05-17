@@ -1,0 +1,51 @@
+package androidServer.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.service.DBService;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/neighbor")
+public class NeighborStatisticController {
+	@Autowired
+	DBService dbService;
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param buildingId
+	 * @param startTime
+	 * @param endTime
+	 * @param floor
+	 * @param network
+	 *            '2G' '3G' '4G'
+	 * @return
+	 */
+	@RequestMapping("getCleanTable")
+	@ResponseBody
+	Map<String, Object> getCleanTable(HttpServletRequest request, HttpServletResponse response, int buildingId,
+			long startTime, long endTime, int floor, String network) {
+		// String network="移动";
+		String mnc = SessionUtils.getUser(request).getNetwork_mnc();
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		List<Map<String, Object>> list = dbService.getCidCleanTable(startTime, endTime, floor, buildingId, network, mnc,
+				province, city);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+}

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans    
+    http://www.springframework.org/schema/beans/spring-beans-4.0.xsd    
+    http://www.springframework.org/schema/tx    
+    http://www.springframework.org/schema/tx/spring-tx-4.0.xsd   
+    http://www.springframework.org/schema/context   
+    http://www.springframework.org/schema/context/spring-context-4.0.xsd 
+    http://www.springframework.org/schema/aop
+    http://www.springframework.org/schema/aop/spring-aop-4.0.xsd  
+    http://www.springframework.org/schema/mvc   
+    http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd
+    http://www.springframework.org/schema/task
+    http://www.springframework.org/schema/task/spring-task-4.0.xsd">
+
+	<!-- 自动扫描Controller的包名 -->
+	<context:component-scan base-package="androidServer.controller" />
+	<!--默认的mvc注解映射的支持 -->
+	<mvc:annotation-driven />
+
+	<!-- 分别配置RequestMappingHandlerMapping和RequestMappingHandlerAdapter -->
+	<!-- <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping"> 
+		</bean> <bean class="org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerAdapter"> 
+		<property name="messageConverters"> <list> <bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter" 
+		/> </list> </property> </bean> -->
+
+	<!-- 拦截器 -->
+	<mvc:interceptors>
+		<!-- 多个拦截器,顺序执行 -->
+		<mvc:interceptor>
+			<mvc:mapping path="/**" /><!-- 如果不配置或/*,将拦截所有的Controller -->
+			<bean class="androidServer.interceptor.LoginInterceptor">
+				<!-- 无需登陆的路径（正则表达式） -->
+				<property name="noLoginURL"
+					value="(/lr/.*)|(/page/reg)|(/page/login)|(/location/.*)" />
+			</bean>
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/page/*" />
+			<bean class="androidServer.interceptor.SignatureInterceptor" />
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+			<bean class="androidServer.interceptor.SearchSessionInterceptor">
+				<property name="interceptorURL"
+					value="(/outdoor.*)|(/indoor.*)|(/buildingStatistic.*)|(/inspectAdmin.*)|(/LTEStatistic.*)|(/neighbor.*)|(/cellAdmin/.*)" />
+			</bean>
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/**" />
+			<bean class="androidServer.interceptor.AuthenticateInterceptor">
+				<property name="noInterceptorURL" value="" />
+			</bean>
+		</mvc:interceptor>
+		<mvc:interceptor>
+			<mvc:mapping path="/location/*" />
+			<bean class="androidServer.interceptor.AndroidLoginInterceptor">
+				<property name="noLoginURL"
+					value="(/location/registry)||(/location/login)||(/location/confirmUserName)||(/location/beaconList)||(/location/check)" />
+			</bean>
+		</mvc:interceptor>
+
+	</mvc:interceptors>
+
+	<!-- <bean id="authorityBean" class="androidServer.aop.AuthorityAspect"></bean> -->
+	<!-- <aop:aspectj-autoproxy proxy-target-class="true"/> -->
+
+	<!-- <aop:config> -->
+	<!-- 定义权限管理切面 -->
+	<!-- <aop:aspect id="AuthorityAspect" ref="authorityBean"> -->
+	<!-- <aop:pointcut id="auth" -->
+	<!-- expression="execution(* androidServer.controller.*.*(..))" /> -->
+	<!-- <aop:before pointcut-ref="auth" method="doBefore" /> -->
+	<!-- <aop:after pointcut-ref="auth" method="doAfter" /> -->
+	<!-- <aop:around pointcut-ref="auth" method="doAround" /> -->
+	<!-- <aop:after-throwing pointcut-ref="auth" method="doThrowing" -->
+	<!-- throwing="ex" /> -->
+	<!-- </aop:aspect> -->
+	<!-- </aop:config> -->
+	<!-- view resolver -->
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="viewClass"
+			value="org.springframework.web.servlet.view.JstlView" />
+		<property name="prefix" value="/WEB-INF/pages/" />
+		<property name="suffix" value=".jsp" />
+	</bean>
+
+	<!-- 文件上传解析器 -->
+	<bean id="multipartResolver"
+		class="org.springframework.web.multipart.commons.CommonsMultipartResolver">
+		<!-- one of the properties available; the maximum file size in bytes -->
+		<property name="maxUploadSize" value="-1" />
+	</bean>
+</beans>

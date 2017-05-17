@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.NeighborMapper">
+
+	<select id="selectCidAndNeighbor" resultType="Map">
+		SELECT
+		position,
+		name,
+		floor,
+		description,
+		networkType,
+		AVG(signalStrength)
+		AS
+		avg_ss,
+		MIN(neighborNumber) AS min_nn,
+		MAX(neighborNumber) AS max_nn,
+		AVG(maxNeigborStrength) AS avg_maxNS,
+		AVG(mainNeigborGap) AS
+		avg_mainNeighborGap
+		FROM
+		(
+		SELECT
+		bl.`name`,
+		b.floor,
+		b.description,
+		i.uuid,
+		i.time,
+		i.networkType,
+		i.position,
+		i.cid,
+		i.signalStrength,
+		count(uuid) AS
+		neighborNumber,
+		max(n.signalStrength) AS maxNeigborStrength,
+		i.signalStrength - max(n.signalStrength) AS mainNeigborGap
+		FROM
+		indoorrecord i,
+		neighbor n,
+		beacon b,
+		building bl
+		WHERE
+		i.uuid = n.uuidFK
+		AND i.position = b.id and b.building=bl.id
+		AND bl.id = #{buildingId}
+		<if test="floor!=0">
+			and b.floor =#{floor}
+		</if>
+		and
+		bl.province=#{province} and bl.city=#{city}
+		AND i.networkType in
+		(${networkList}) and i.mnc
+		in (${mncList})
+		<![CDATA[
+		AND i.time >= #{timeStart}
+		AND
+		i.time < #{timeEnd}
+		]]>
+		GROUP BY
+		i.uuid
+		ORDER BY
+		i.uuid
+		) AS t
+		GROUP BY
+		position,
+		networkType
+		ORDER BY
+		floor,
+		position
+	</select>
+	<select id="selectMaxNeighborDifferenceDaily" resultType="Map">
+		SELECT
+		CONCAT(
+		YEAR (i.time),
+		"-",
+		MONTH (i.time),
+		"-",
+		DAYOFMONTH(i.time)
+		)
+		AS date,
+		i.cid AS mainServingCid,
+		n.cid AS neighborServingCid,
+		min(
+		i.signalStrength - n.signalStrength
+		) AS distrubNeighbor
+		FROM
+		indoorrecord i,
+		neighbor n,
+		buildingworkparameter bwp
+		WHERE
+		<![CDATA[
+		i.time >= #{timeStart}
+		AND i.time < #{timeEnd}
+		]]>
+		AND i.position = #{position}
+		AND i.mnc IN (${mncList})
+		AND
+		bwp.buildingId = #{buildingId}
+		AND i.networkType IN (${networkList})
+		AND
+		i.uuid = n.uuidFK
+		AND (i.cid = bwp.ci OR n.cid = bwp.ci)
+		GROUP BY
+		date,
+		i.cid,
+		n.cid
+		ORDER BY
+		date,
+		distrubNeighbor
+	</select>
+	<select id="selectNeighborHist" resultType="Map">
+		SELECT
+		b.floor,
+		b.description,
+		i.uuid,
+		i.position,
+		n.cid,
+		i.signalStrength,
+		AVG(n.signalStrength) as neighborStrength
+		FROM
+		indoorrecord i,
+		neighbor
+		n,
+		beacon b,
+		building bl
+		WHERE
+		i.uuid = n.uuidFK
+		AND i.position = b.id
+		AND
+		b.building = bl.id
+		AND i.position = #{position}
+		AND i.networkType in
+		(${networkList}) and i.mnc
+		in (${mncList})
+		AND
+		bl.id =#{buildingId}
+
+		<![CDATA[
+		AND i.time >= #{timeStart}
+		AND i.time < #{timeEnd}
+		]]>
+		GROUP BY
+		n.cid
+		ORDER BY
+		neighborStrength
+	</select>
+</mapper>

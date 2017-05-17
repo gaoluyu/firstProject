@@ -1,0 +1,23 @@
+package androidServer.mapper;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+
+import androidServer.bean.HeatData;
+import androidServer.bean.IndoorRecord;
+import androidServer.bean.WorkParameter;
+
+import com.sun.org.glassfish.gmbal.ParameterNames;
+
+public interface WarningMapper {
+	void truncateScan();
+
+	void udpateScan(@Param("timeStart") Timestamp timeStart, @Param("timeEnd") Timestamp timeEnd);
+
+	void insertWarningBox(@Param("timeStart") Timestamp timeStart, @Param("timeEnd") Timestamp timeEnd);
+
+	long selectMessageNumber(@Param("username") String username);
+}

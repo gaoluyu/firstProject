@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.BeaconMapper">
+	<select id="getAvailableBeaconList" resultType="String"
+		useCache="false">
+	    <![CDATA[
+		 select id from beacon;
+		]]>
+	</select>
+
+	<select id="getTotalBeaconNumber" resultType="long" useCache="false">
+
+		select count(*) from beacon b,building
+		where b.building=building.id and
+		building.id=#{building}
+		<if test="floor != null">
+			and b.floor=#{floor}
+		</if>
+		and b.inUse=1
+
+	</select>
+
+	<insert id="insertIndoor" parameterType="List">
+		insert into indoorRecord
+		(signalStrength,cid,position,beaconRssi,bTxPower,distance,time,netType,networkType,lac,mcc,mnc,cellRecordTime,uuid)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.signalStrength},#{item.cid},#{item.position},#{item.beaconRssi},#{item.bTxPower},#{item.distance},#{item.time},#{item.netType},#{item.networkType},#{item.lac},#{item.mcc},#{item.mnc},#{item.cellRecordTime},#{item.uuid})
+		</foreach>
+	</insert>
+
+	<insert id="insertNeighbor" parameterType="List">
+		insert into neighbor
+		(uuidFK,cid,signalStrength,time)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.uuidFK},#{item.cid},#{item.signalStrength},#{item.time})
+		</foreach>
+	</insert>
+
+
+</mapper>

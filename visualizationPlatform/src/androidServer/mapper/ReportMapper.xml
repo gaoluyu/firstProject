@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.ReportMapper">
+
+	<select id="getWarningReport" resultType="WarningReport">
+		SELECT b.region, b.`name`,
+		bea.floor, bea.description,
+		CONCAT(w.operator,w.netType) as netWork, w.`value`,
+		us.warningValue,
+		w.isRead, w.sendPhoneNumber, w.startTime as faultTime
+		from warningbox
+		w, building b, beacon bea, usersetting us
+		where w.buildingId = b.id AND
+		w.position = bea.id AND us.operator = w.operator
+		AND us.netType =
+		w.netType AND us.userId = #{username} AND w.toUserId =
+		#{username} AND
+		<![CDATA[ 
+			 w.startTime >= #{startTime} AND w.endTime < #{endTime}
+		]]>
+		<if test="regionMayDefault != 'all_region'">
+			and b.region=#{regionMayDefault}
+		</if>
+		ORDER BY isRead DESC, startTime DESC
+		<if test="isAll != 1">
+			limit
+			#{itemStart},#{offset}
+		</if>
+	</select>
+
+	<select id="getTotalCount" resultType="int">
+		select count(*) from
+		WarningBox w ,building b 
+		where w.buildingId=b.id and toUserId=#{username} and  
+		<![CDATA[ 
+		w.startTime > #{startTime} AND w.endTime < #{endTime}
+		]]>
+		<if test="regionMayDefault != 'all_region'">
+			and b.region=#{regionMayDefault}
+		</if>
+
+	</select>
+
+	<select id="getBusinessReport" resultType="BusinessReport">
+		SELECT
+		w.province, w.city, w.ci,
+		w.lac,w.freqChannel,w.cellNameCh,w.cellNameEng,
+		w.cellAddress,w.belonging,w.scene,w.region,w.enodeb,w.longitude,w.latitude,
+		t.avg_strength, t.avg_rsrp, t.avg_rsrq, t.avg_sinr, t.network
+		from
+		workparameter w,
+		(
+		SELECT
+		b.province ,b.city,
+		i.cid,bwp.network,
+		AVG(i.signalStrength) as avg_strength,
+		AVG(i.rsrp) as avg_rsrp,
+		AVG(i.rsrq) as avg_rsrq,
+		AVG(i.sinr) as
+		avg_sinr
+		FROM indoorrecord
+		i,beacon ,building b,buildingworkparameter
+		bwp
+		<![CDATA[ 
+		where i.time>= #{startTime} and i.time<#{endTime}
+		]]>
+		and i.position=beacon.id and beacon.building=b.id and
+		b.province=#{province}
+		and b.city=#{city}
+		and b.id=bwp.buildingId and
+		i.cid=bwp.ci
+		and i.rsrp is
+		not null and i.rsrq is not null and i.sinr is
+		not null and i.mnc in (${mncList})
+		group by
+		network,cid
+		) as t
+		where
+		w.province=t.province and w.city=t.city and
+		w.ci=t.cid and
+		w.network=t.network
+		<if test="wpNetwork != 'all_network'">
+			and w.network=#{wpNetwork}
+		</if>
+		<if test="wpRegion != 'all_region'">
+			and w.region=#{wpRegion}
+		</if>
+		order by cid
+		<if test="isAll != 1">
+			limit
+			#{itemStart},#{offset}
+		</if>
+	</select>
+
+	<select id="selectInspectNumber" resultType="InspectNumber">
+		truncate inspect_report_tmp;
+		insert into inspect_report_tmp
+		SELECT
+		inspector,
+		CONCAT(YEAR(time),"-",MONTH(time),"-",DAYOFMONTH(time)) as
+		date, min(time) as sortTime,
+		count(distinct position) as number,
+		b.building,building.name as buildingName
+		FROM `indoorrecord` i,beacon
+		b,building
+		<![CDATA[
+		where i.time>=#{timeStart} and i.time<#{timeEnd}]]>
+		and
+		i.position=b.id and b.building=building.id and
+		building.province=#{province}
+		and building.city=#{city}
+		and inspector is
+		not null
+		group by inspector,date,building;
+
+		select
+		t.date_string,t.inspector as inspector,
+		t.buildingName,
+		inspect_report_tmp.number,
+		inspect_report_tmp.building
+		FROM
+		(
+		SELECT
+		inspector,d.date_string,building,buildingName,timeAtZero
+		FROM
+		datetable
+		d CROSS JOIN `inspect_report_tmp` i
+		<![CDATA[
+		where
+		d.timeAtZero>=#{timeStart} and d.timeAtZero<#{timeEnd}]]>
+		group by
+		inspector,building,date_string
+		) as t LEFT JOIN
+		inspect_report_tmp
+		on
+		t.date_string=inspect_report_tmp.date
+		and
+		t.inspector=inspect_report_tmp.inspector
+		and
+		t.building=inspect_report_tmp.building
+		order by
+		t.inspector,t.building,t.timeAtZero;
+
+	</select>
+
+	<select id="selectInspectTimes" resultType="InspectTimes">
+
+		truncate
+		inspect_time_report_tmp;
+
+		insert into inspect_time_report_tmp
+		SELECT
+		username as inspector,
+		CONCAT(YEAR(startTime),"-",MONTH(startTime),"-",DAYOFMONTH(startTime))
+		as date,
+		min(startTime) as sortTime,
+		SUM(duration) as duration,
+		building.id as building,
+		COUNT(duration) as times,
+		building.name as
+		buildingName
+		FROM inspection i,building
+		where i.buildingId=building.id
+		and building.province=#{province} and
+		building.city=#{city}
+		and
+		<![CDATA[
+		i.startTime>=#{timeStart} and i.startTime<#{timeEnd}]]>
+		group by
+		date,username,building.id;
+
+		SELECT t.date_string,t.buildingName,
+		t.inspector,inspect_time_report_tmp.duration,
+		inspect_time_report_tmp.times
+		from
+		(
+		SELECT
+		inspector,d.date_string,building,buildingName,timeAtZero FROM
+		datetable d CROSS JOIN `inspect_time_report_tmp` i
+		where
+		<![CDATA[
+		d.timeAtZero>=#{timeStart} and d.timeAtZero<#{timeEnd}]]>
+		group by
+		inspector,building,date_string
+		) as t LEFT JOIN
+		inspect_time_report_tmp
+		on t.date_string=inspect_time_report_tmp.date
+		and
+		t.inspector=inspect_time_report_tmp.inspector
+		and
+		t.building=inspect_time_report_tmp.building
+		order by
+		t.inspector,t.building,t.timeAtZero;
+
+	</select>
+
+	<select id="selectDateString" resultType="String">
+		select datetable.date_string
+		from
+		datetable
+		where 
+		<![CDATA[
+		timeAtZero>=#{timeStart} and timeAtZero<#{timeEnd}
+		]]>
+	</select>
+
+	<select id="getInspectReport" resultType="InspectReport">
+		SELECT
+		t.inspector,
+		t.date,
+		tt.description,
+		tt.bid,
+		(
+		SELECT
+		DATE_FORMAT(Min(time), '%T %p') AS inspectTime
+		FROM
+		indoorrecord
+		WHERE
+		inspector = t.inspector
+		AND position = tt.bid
+		AND CONCAT(
+		YEAR (time),
+		"-",
+		MONTH (time),
+		"-",
+		DAYOFMONTH(time)
+		) = t.date
+		) AS inspectTime
+		FROM
+		(
+		SELECT
+		i.inspector,
+		CONCAT(
+		YEAR (i.time),
+		"-",
+		MONTH (i.time),
+		"-",
+		DAYOFMONTH(i.time)
+		) AS date
+		FROM
+		`indoorrecord` i,
+		beacon b,
+		building
+		WHERE
+		building.id = b.building
+		AND b.id = i.position
+		AND building.id = 1
+		AND i.inspector
+		IS NOT NULL
+		<![CDATA[
+		AND i.time >= #{timeStart}
+		AND i.time < #{timeEndTS}
+		]]>
+		GROUP BY
+		i.inspector,
+		date
+		) AS t,
+		(
+		SELECT
+		beacon.id AS bid,
+		description
+		FROM
+		beacon,
+		building
+		WHERE
+		beacon.building = building.id
+		AND beacon.inUse
+		= "1"
+		AND building.id = #{buildingId}
+		GROUP BY
+		beacon.id,
+		description
+		) AS
+		tt
+		GROUP BY
+		t.inspector,
+		t.date,
+		tt.description
+		<if test="isAll != 1">
+			limit
+			#{start},#{end}
+		</if>
+	</select>
+</mapper>

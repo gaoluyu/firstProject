@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.OutdoorMapper">
+	<select id="selectOutdoorMapPoints" resultType="Map" useCache="false">
+	<![CDATA[
+		select
+		CASE
+			WHEN  i.signalStrength>= (select green_bottom from networklist   where network=#{dataType}) THEN 1
+			WHEN  i.signalStrength>= (select blue_bottom from networklist where network=#{dataType}) THEN 2
+			WHEN  i.signalStrength>= (select yellow_bottom from networklist where network=#{dataType}) THEN 3
+			WHEN  i.signalStrength>= (select red_bottom from networklist where network=#{dataType}) THEN 4
+			WHEN  i.signalStrength< (select red_bottom from networklist where network=#{dataType}) THEN 5
+			ELSE 0
+		END AS flag,count(time) as flagNumber,w.cellNameCh as name,
+		AVG(i.signalStrength) as averageStrength,
+        w.ci,i.time,i.mnc as operator,ifnull(i.networkType,'暂无网络') as netType,
+		w.province,w.city,w.longitude,w.latitude
+		from
+		workParameter w  join indoorRecord i on w.ci = i.cid and i.time>=#{timeStart} and i.time<#{timeEnd}
+		and i.mnc in (${operatorList}) and i.networkType in (${typeList})  
+		where 
+		w.isIndoor=1 and w.province=#{province} and w.city=#{city} and w.network=#{wpNetwork} 
+		]]>
+		<if test="ciMayDefault != 0">
+			and w.ci=#{ciMayDefault}
+		</if>
+		group by w.ci,flag
+		order by w.ci,flag
+	</select>
+
+	<select id="getAvgIndex" resultType="Map" useCache="false">
+	<![CDATA[
+	    select 
+	    IFNULL(AVG(i.signalStrength),0) as averageStrength,IFNULL(AVG(i.rsrp),0) as averageRsrp,
+	    IFNULL(AVG(i.rsrq),0) as averageRsrq,IFNULL(AVG(i.sinr),0) as averageSinr,
+	    IFNULL(AVG(i.dl_bps),0) as averageDlbps, IFNULL(AVG(i.ul_bps),0) as averageUlbps
+	    from indoorRecord i  
+	    where i.cid = #{cid} and i.time>=#{timeStart} and i.time<#{timeEnd} and position!='暂无设备' 
+	    and i.mnc in (${operatorList}) and i.networkType in (${typeList}) 
+	]]>
+	</select>
+
+	<select id="getAvgSpeed" resultType="Map" useCache="false">
+	<![CDATA[
+	    select 
+	    IFNULL(AVG(i.dl_bps),0) as averageDlbps, IFNULL(AVG(i.ul_bps),0) as averageUlbps
+	    from indoorRecord i  
+	    where i.cid = #{cid} and i.time>=#{timeStart} and i.time<#{timeEnd} and position!='暂无设备' 
+	    and dl_bps!=-1 and ul_bps!=-1
+	    and i.mnc in (${operatorList}) and i.networkType in (${typeList}) 
+	]]>
+	</select>
+
+	<select id="getWarningNum" resultType="int">
+		select count(cid)
+		from
+		indoorrecord
+		where cid=#{cid} and mnc in (${operatorList}) and
+		networkType in (${typeList}) and time>=#{startTime} and
+		#{endTime}>time
+		and #{warningValue}>signalStrength
+	</select>
+
+	<select id="selectHeatData" resultType="HeatData" useCache="false">
+	<![CDATA[
+		 select 
+		 signalStrength as value,
+		 Longitude as lng,
+		 Latitude as lat
+		 from location 
+		 where Longitude != 0 and Latitude != 0 and city=#{province} order by time desc
+		 limit 9000
+		]]>
+	</select>
+
+	<select id="selectHeatResult" resultType="HeatData" useCache="false">
+	<![CDATA[
+		 select 
+		 value as value,
+		 Longitude as lng,
+		 Latitude as lat
+		 from heatResult 
+		 where Longitude != 0 and Latitude != 0 and province=#{province} order by updateTime desc
+		 limit 9000
+		]]>
+	</select>
+
+
+	<insert id="updateHeatResult" parameterType="List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into HeatResult
+			(province,city,updateTime,longitude,latitude,value)
+			values
+			(#{province},#{city},#{updateTime},#{item.lng},#{item.lat},#{item.value})
+		</foreach>
+	</insert>
+
+
+	<select id="selectCenterCoordinate" resultType="Map" useCache="false">
+	<![CDATA[
+		 select 
+		 lng as lng,lat as lat 
+		 from city 
+		 where name=#{city} and pname=#{province}
+		]]>
+	</select>
+
+
+	<select id="selectCiOrCNameLike" resultType="Map" useCache="false">
+	<![CDATA[
+		 select 
+		 ci as value,CONCAT(ci,' ',cellNameCh) as label
+		 from workparameter 
+		 where city=#{city} and province=#{province} and network=#{network} 
+		 and isIndoor=1 and (ci like #{CiOrCName} or cellNameCh like #{CiOrCName})
+		]]>
+	</select>
+
+</mapper>

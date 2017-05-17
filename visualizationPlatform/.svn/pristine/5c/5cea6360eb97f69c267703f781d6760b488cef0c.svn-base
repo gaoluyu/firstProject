@@ -1,0 +1,105 @@
+package androidServer.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.service.DBService;
+import androidServer.util.Constants;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("buildingStatistic")
+public class BuildingStatisticController {
+	@Autowired
+	DBService dbService;
+
+	/**
+	 * 模糊查询buildingName，给出想死的结果
+	 * 
+	 * @param request
+	 * @param response
+	 * @param buildingName
+	 * @return
+	 */
+	@RequestMapping("getBuildingLike")
+	@ResponseBody
+	Map<String, Object> getBuildingLike(HttpServletRequest request,
+			HttpServletResponse response, String buildingName) {
+		String province = SessionUtils.getProvince(request);
+		String city = SessionUtils.getCity(request);
+		List<Map<String, Object>> list = dbService.getbBuildingLike(province,
+				city, buildingName);
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("list", list);
+		return data;
+	}
+
+	@RequestMapping("dataforPlat")
+	@ResponseBody
+	Map<String, Object> getNum(HttpServletRequest request,
+			HttpServletResponse response, long startTime, long endTime,
+			String network, int buildingId, int floor) {
+		//CoverageRatio
+		boolean isLocalCid = true;
+		List<Map<String, Object>> tList = dbService.getNetworkTypeNum(
+				startTime, endTime, network, buildingId, floor, isLocalCid);
+		isLocalCid = false;
+		List<Map<String, Object>> fList = dbService.getNetworkTypeNum(
+				startTime, endTime, network, buildingId, floor, isLocalCid);
+		System.out.println("tList:" + tList.size());
+		System.out.println("fList:" + fList.size());
+		//warningNumber
+		String userId = SessionUtils.getUser(request).getUsername();
+		String operator = network;
+		List<Map<String, Object>> wList = dbService.getWarningNum(startTime,
+				endTime, network, buildingId, floor, userId, operator);
+		System.out.println("wList:" + wList.size());
+		//cidNum
+		List<Map<String, Object>> cList = dbService.getCidNum(startTime,
+				endTime, network, buildingId, floor);
+		System.out.println("cList:" + cList.size());
+		Map<String, Object> data = WebUtil.okResponse(request);
+		data.put("tList", tList);
+		data.put("fList", fList);
+		data.put("wList", wList);
+		data.put("cList", cList);
+		return data;
+	}
+
+//	@RequestMapping("warningNumber")
+//	@ResponseBody
+//	Map<String, Object> getWorningNum(HttpServletRequest request,
+//			HttpServletResponse response, long startTime, long endTime,
+//			String network, int buildingId, int floor) {
+//		String userId = SessionUtils.getUser(request).getUsername();
+//		String operator = network;
+//		List<Map<String, Object>> list = dbService.getWarningNum(startTime,
+//				endTime, network, buildingId, floor, userId, operator);
+//		Map<String, Object> data = WebUtil.okResponse(request);
+//		data.put("list", list);
+//		return data;
+//	}
+//
+//	@RequestMapping("cidNum")
+//	@ResponseBody
+//	Map<String, Object> getCidNum(HttpServletRequest request,
+//			HttpServletResponse response, long startTime, long endTime,
+//			String network, int buildingId, int floor) {
+//		List<Map<String, Object>> list = dbService.getCidNum(startTime,
+//				endTime, network, buildingId, floor);
+//		Map<String, Object> data = WebUtil.okResponse(request);
+//		data.put("list", list);
+//		return data;
+//
+//	}
+
+}

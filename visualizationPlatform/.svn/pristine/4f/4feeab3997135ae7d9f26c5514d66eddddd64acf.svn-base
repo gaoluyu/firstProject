@@ -1,0 +1,38 @@
+package androidServer.mapper;
+
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+
+import com.sun.org.glassfish.gmbal.ParameterNames;
+
+import androidServer.bean.IndoorDate;
+import androidServer.bean.IndoorList;
+
+public interface IndoorMapper {
+	List<Map<String, Object>> selectIndoorMapPoints(@Param("timeStart") Timestamp timeStart,
+			@Param("timeEnd") Timestamp timeEnd, @Param("floor") int floor, @Param("building") int building,
+			@Param("ci") int ci, @Param("mncList") String mncList, @Param("netList") String netList);
+
+	List<IndoorList> selectIndoorList(@Param("timeStart") Timestamp timeStart, @Param("timeEnd") Timestamp timeEnd,
+			@Param("ci") int ci, @Param("floor") int floor, @Param("building") int building,
+			@Param("itemStart") int itemStart, @Param("offset") int offset, @Param("mncList") String mncList,
+			@Param("netList") String netList);
+
+	List<IndoorList> selectIndoorListWithAllCid(@Param("timeStart") Timestamp timeStart,
+			@Param("timeEnd") Timestamp timeEnd, @Param("floor") int floor, @Param("building") int building,
+			@Param("itemStart") int itemStart, @Param("offset") int offset, @Param("mncList") String mncList,
+			@Param("netList") String netList);
+
+	List<IndoorDate> selectRssiByDay(@Param("timeStart") Timestamp timeStart, @Param("timeEnd") Timestamp timeEnd,
+			@Param("beaconId") String beaconId, @Param("ci") int ci, @Param("mncList") String mncList,
+			@Param("netList") String netList);
+
+	List<Map<String, String>> selectBuildings(@Param("province") String province, @Param("city") String city);
+
+	Map<String, Long> selectFloor(@Param("buildingId") int buildingId, @Param("ci") int ci);
+
+
+}

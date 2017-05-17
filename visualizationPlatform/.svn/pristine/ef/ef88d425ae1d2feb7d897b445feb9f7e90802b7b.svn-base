@@ -1,0 +1,57 @@
+package androidServer.controller;
+
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.service.DBService;
+import androidServer.util.WebUtil;
+
+
+
+@Controller
+@RequestMapping("upApp")
+
+public class UpdateApp {
+	
+	@Autowired
+	DBService dbService;
+
+	/**
+	 *
+	 *
+	 */
+	@RequestMapping("check")
+	@ResponseBody
+	public Map<String, Object> getNewApp(HttpServletRequest request, HttpServletResponse response,
+			Map<String,Object> version){
+		String url = null;
+		String description = null;
+		String oldversion = (String) version.get("version");
+//		String oldversion = version;
+		
+		Map<String,Object> newVersion = dbService.getNewApp();	
+		String newversion = (String) newVersion.get("version");
+				
+		if(newversion.equals(oldversion)){
+			url = null;
+		}else{
+			url = "/App/" + newversion + ".apk";
+			description = (String) newVersion.get("description");			
+		}
+			
+		Map<String, Object> map = WebUtil.okResponse(request);
+		map.put("url", url);
+		map.put("version", newversion);
+		map.put("description",description);
+		return map;
+	}
+	
+}

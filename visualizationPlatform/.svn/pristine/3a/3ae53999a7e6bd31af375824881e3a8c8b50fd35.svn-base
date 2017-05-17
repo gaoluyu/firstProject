@@ -1,0 +1,31 @@
+package androidServer.mapper;
+
+import java.util.List;
+import java.util.Map;
+
+import org.apache.ibatis.annotations.Param;
+
+import androidServer.bean.IndoorBeaconRecord;
+import androidServer.bean.IndoorRecord;
+import androidServer.bean.Neighbor;
+import androidServer.bean.Sim;
+
+public interface AndroidMapper {
+
+	List<String> getAvailableBeaconList();
+
+	long getTotalBeaconNumber(@Param("floor") int floor, @Param("building") int building);
+
+	int insertIndoor(List<IndoorRecord> list);
+
+	int insertNeighbor(List<Neighbor> list);
+
+//	int insertOrUpdateSim(@Param("imsi") String imsi, @Param("imei") String imei, @Param("phoneName") String phoneName,
+//			@Param("operatingSystem") String operatingSystem, @Param("phoneType") String phoneType);
+	
+	int insertOrUpdateSim(@Param("sim") Sim sim);
+		
+	int insertIndoorBeaconRecord(List<IndoorBeaconRecord> indoorBeaconRecords);
+	
+	boolean updateIndoorRecord(List<Map<String, Object>> speeds);
+}

@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.DeviceAdminMapper">
+
+	<select id="selectAllBuilding" resultType="Building">
+		select
+		b.id,ci,network,province,city,region,unit,floorUpGround,floorUnderGround,name
+		from
+		building b left join buildingWorkParameter
+		on
+		b.id=buildingWorkParameter.buildingId where
+		province=#{province}
+		and
+		city=#{city} group by b.id order by b.id
+		limit
+		#{itemStart},#{offset}
+	</select>
+
+	<select id="selectBuilding" resultType="Building">
+		select
+		b.id,ci,network,province,city,region,unit,floorUpGround,floorUnderGround,name
+		from
+		building b,buildingWorkParameter
+		where
+		b.id=buildingWorkParameter.buildingId and b.id=#{id}
+		group by b.id
+	</select>
+
+	<select id="selectBuildingName" resultType="String">
+		select name from
+		building b
+		where b.id=#{id}
+	</select>
+
+	<select id="selectBuildingTotalCount" resultType="long">
+		select
+		count(*)
+		from building
+		where province=#{province} and city=#{city}
+	</select>
+
+
+	<insert id="insertSingleBuilding" parameterType="Building"
+		useGeneratedKeys="true" keyProperty="id">
+		<selectKey resultType="java.lang.Integer" order="AFTER"
+			keyProperty="id">
+			SELECT LAST_INSERT_ID() AS id
+		</selectKey>
+		insert into
+		building
+		(province,city,region,unit,floorUpGround,floorUnderGround,name)
+		values
+		(#{item.province},#{item.city},#{item.region},#{item.unit},#{item.floorUpGround},
+		#{item.floorUnderGround},#{item.name})
+	</insert>
+
+	<update id="updateBuilding" parameterType="Building">
+		update
+		building set
+		province=#{item.province},city=#{item.city},region=#{item.region},floorUpGround=#{item.floorUpGround},
+		floorUnderGround=#{item.floorUnderGround},name=#{item.name}
+		where
+		id=#{item.id}
+	</update>
+
+	<delete id="deleteBuilding">
+		delete from building where id=#{id} and
+		province=#{province} and city=#{city} and unit=#{unit};
+		delete from
+		buildingWorkParameter where buildingId=#{id}
+	</delete>
+
+
+	<select id="selectBuildingCi" resultType="map">
+		select id as id,network
+		as network,ci as ci
+		from buildingWorkParameter where
+		buildingId=#{buildingId}
+	</select>
+
+	<insert id="insertSingleBuildingCi">
+		insert into
+		buildingWorkParameter
+		(buildingId,network,ci)
+		values
+		(#{buildingId},#{network},#{ci})
+	</insert>
+
+	<insert id="insertBuildingCi" parameterType="java.util.List">
+		insert into buildingWorkParameter
+		(buildingId,network,ci)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.buildingId},#{item.network},#{item.ci})
+		</foreach>
+	</insert>
+
+	<update id="updateSingleBuildingCi">
+		update
+		buildingWorkParameter
+		set
+		network=#{network} ,
+		ci=#{ci}
+		where
+		id=#{id}
+	</update>
+
+	<update id="updateBuildingCi" parameterType="List">
+
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			update
+			buildingWorkParameter
+			set
+			network=#{item.network} ,
+			ci=#{item.ci}
+			where
+			id=#{item.id}
+		</foreach>
+	</update>
+
+	<delete id="deleteBuildingCi">
+		delete from buildingWorkParameter where id=#{id}
+	</delete>
+
+	<delete id="deleteBuildingCiWithBid">
+		delete from buildingWorkParameter where
+		buildingId=#{buildingId}
+	</delete>
+
+	<select id="getBeaconCount" resultType="long">
+		select
+		count(*)
+		from
+		beacon
+		b
+		where
+		b.building=#{id}
+	</select>
+
+	<select id="selectBeacon" resultType="Beacon">
+		select
+		b.id,b.building,b.inUse,b.description,b.x,b.y,b.floor
+		from
+		beacon b
+		where b.building=#{id}
+		order by b.id
+		limit
+		#{itemStart},#{offset}
+	</select>
+
+	<select id="selectSingleBeacon" resultType="Beacon">
+		select
+		b.id,b.building,b.inUse,b.description,b.x,b.y,b.floor
+		from
+		beacon b
+		where id=#{mac}
+	</select>
+
+	<insert id="insertSingleBeacon" parameterType="Beacon">
+		insert into
+		beacon
+		(id,building,inUse,description,x,y,floor)
+		values
+		(#{item.id},#{item.building},#{item.inUse},#{item.description},#{item.x},
+		#{item.y},#{item.floor})
+		on DUPLICATE key UPDATE
+		building=#{item.building},inUse=#{item.inUse},description=#{item.description},
+		x=#{item.x},y=#{item.y},floor=#{item.floor}
+	</insert>
+
+	<delete id="deleteBeacon">
+		delete from beacon where id=#{mac}
+	</delete>
+
+	<select id="selectBuildingMap" resultType="Map" useCache="false">
+		select
+		floor as floor,url as url from BuildingMap where
+		buildingId=#{buildingId}
+		<if test="floor != 0">
+			and floor =#{floor}
+		</if>
+	</select>
+
+	<insert id="updateBuildingMap" parameterType="java.util.List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into buildingMap
+			(buildingId,floor,url)
+			values
+			(#{item.buildingId},#{item.floor},#{item.url}) on DUPLICATE
+			key UPDATE
+			url=#{item.url}
+		</foreach>
+	</insert>
+
+
+	<delete id="deleteBuildingMap">
+		delete from buildingMap
+		where buildingId=#{buildingId}
+		<if test="floor !=0">
+			and
+			floor=#{floor}
+		</if>
+
+	</delete>
+
+	<select id="selectBuildingInsertId" resultType="int">
+		select max(id)
+		from building;
+	</select>
+</mapper>

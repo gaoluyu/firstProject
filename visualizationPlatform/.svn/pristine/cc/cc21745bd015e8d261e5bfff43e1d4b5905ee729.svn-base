@@ -1,0 +1,35 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<div class="row-fluid">
+	<div class="span12">
+		<div class="navbar navbar-bg">
+			<div class="container-fluid">
+				<a class="btn btn-navbar" data-target=".navbar-responsive-collapse"
+					data-toggle="collapse"></a><img src="${mainpath}/images/logo.gif"
+					class="nav nav-logo"></img> <span class="nav-title" href="#">无线室分网络监控分析系统</span>
+				<div class="nav pull-right" id="right" style="margin-top:15px">
+					<span class="glyphicon glyphicon-user"></span> 用户名:<a
+						href="${mainpath}/page/userAdmin">${sessionScope.loginedUser.username}
+					</a>
+					<span> </span>
+					<span class="glyphicon glyphicon-envelope"></span> 消息:<a href="${mainpath}/page/message"><span
+						 class="badge badge-warning" id="userMessageNumber"></span>
+					</a>
+					<span class="glyphicon glyphicon-share"></span> <a href="${mainpath}/page/logout">退出</a>
+				</div>
+			</div>
+			<script type="text/javascript">
+				function getMessageCount() {
+					ajaxUtil({}, "${mainpath}/userAdmin/messageNumber",
+							function(response) {
+
+								$("#userMessageNumber").html(response.count);
+							}, function(response, reason) {
+							});
+				}
+				getMessageCount();
+				setInterval("getMessageCount()", 60 * 1000);//1min
+			</script>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,148 @@
+var buildingMapList = [];
+function onSearch() {
+	$("#search").click(function() {
+		// 地图
+		ajaxUtil({
+			"startTime" : getStartTime(),
+			"endTime" : getEndTime(),
+			"floor" : $("#floorSelector").val(),
+			"building" : getCiOrBuildingId("buildingId"),
+			"network" : getCiOrBuildingId("network"),
+			"ci" : getCiOrBuildingId("ci")
+		}, mainpath + "/indoor/indoorMap", function(response) {
+			alert(JSON.stringify(response));
+			console.log(JSON.stringify(response));
+			// var
+			// canvas_json=[{x:100,y:100,z:"red"},{x:200,y:100,z:"green"},{x:300,y:100,z:"red"},{x:400,y:100,z:"green"},{x:500,y:100,z:"green"},{x:100,y:200,z:"green"},{x:100,y:300,z:"green"},{x:300,y:200,z:"green"},{x:200,y:300,z:"red"},{x:200,y:200,z:"green"},{x:200,y:100,z:"green"}];
+			draw_Map(response.list);
+
+		}, function(response, reason) {
+		});
+		// 表格
+		printIndoorList("#indoorList", "", "", 1, 100);
+	});
+}
+function loadFloorMap(selectorId, mapId) {
+	var floor = $(selectorId).val();
+	var find = false;
+	var url;
+
+	for (var i = 0; i < buildingMapList.length; i++) {
+		var item = buildingMapList[i];
+		if (item.floor == floor) {
+			find = true;
+			url = item.url;
+			break;
+		}
+	}
+	if (find) {
+		var canvas = $(mapId);
+		if (canvas == null)
+			return false;
+		canvas.css("backgroundImage", "url('/buildingMap/" + url + "')");
+
+	} else {
+		ajaxUtil({
+			"buildingId" : getCiOrBuildingId("buildingId")
+		}, mainpath + "/indoor/mapUrl", function(response) {
+			// update buildingMapList
+			if (response.list != null && response.list.length > 0) {
+				var _find = false;
+				for (var i = 0; i < response.list.length; i++) {
+					var item = response.list[i];
+					if (item.floor == floor) {
+						_find = true;
+						break;
+					}
+				}
+				if (_find) {
+					buildingMapList = response.list;
+					loadFloorMap("#floorSelector", "#canvas");
+					return;
+				}
+
+			}
+			alert("改层尚未上传室内地图");
+
+		}, function(response, reason) {
+			alert(reason);
+		});
+	}
+}
+function printIndoorList(tableId, url, data, pageNo, pageSize) {
+	ajaxUtil({
+		"startTime" : getStartTime(),
+		"endTime" : getEndTime(),
+		"floor" : $("#floorSelector").val(),
+		"building" : getCiOrBuildingId("buildingId"),
+		"ci" : getCiOrBuildingId("ci"),
+		"network" : getCiOrBuildingId("network"),
+		"startPage" : pageNo,
+		"pageSize" : pageSize
+	}, mainpath + "/indoor/indoorList", function(response) {
+		var list = response.list;
+		var totalCount = response.totalCount;
+		var table = $(tableId);
+		var theHtml = "<thead>"
+				+ "<tr><th>楼编号</th><th>楼层</th><th>位置</th><th>描述</th>"
+				+ "<th>平均场强（dbm）</th><th>最大场强(dbm)</th><th>最小场强(dbm)"
+				+ "</th><th>覆盖率</th></tr></thead>";
+		theHtml += "<tbody>"
+		for (var i = 0; i < list.length; i++) {
+			var style = null;
+			var avers = list[i].averageStrength;
+			if (avers < -110) {
+				style = "danger";
+			} else if (avers < -90 && avers > -110) {
+				style = "warning";
+			} else if (avers < 0 && avers > -90) {
+				style = "success";
+			} else {
+				style = "active";
+			}
+			theHtml += "<tr class='" + style + "'>";
+			theHtml += "<td>" + list[i].building + "</td>";
+			theHtml += "<td>" + list[i].floor + "</td>";
+			theHtml += "<td>" + list[i].position + "</td>";
+			theHtml += "<td>" + list[i].description + "</td>";
+			theHtml += "<td>" + list[i].averageStrength + "</td>";
+			theHtml += "<td>" + list[i].maxRssi + "</td>";
+			theHtml += "<td>" + list[i].minRssi + "</td>";
+			theHtml += "<td>" + list[i].ratio + "</td>";
+			theHtml += "</tr>";
+		}
+		theHtml += "</tbody>";
+		table.html(theHtml);
+		var totalPage = Math.ceil(totalCount / pageSize);
+		printPage(tableId, document.getElementById("paging"), totalPage, url,
+				data, pageNo, pageSize, "printIndoorList");
+		setIcRank();
+	}, function(response, reason) {
+		alert(reason);
+	});
+}
+function draw_Map(canvas_json) {
+	var canvas = $("#canvas");
+	var ctx = canvas.get(0).getContext('2d');
+	// var pic = new Image();
+	// pic.src ="/androidServer/images/inside.png";
+	// pic.onload = function(){ctx.drawImage(pic,0,0);}
+	for (var i = 0; i < canvas_json.length; i++) {
+		if (canvas_json[i].averageStrength < -110) {
+			ctx.fillStyle = "red";
+		} else if (canvas_json[i].averageStrength > -110
+				&& canvas_json[i].averageStrength < -90) {
+			ctx.fillStyle = "yellow";
+		} else if (canvas_json[i].averageStrength > -90
+				&& canvas_json[i].averageStrength < 0) {
+			ctx.fillStyle = "green";
+		} else {
+			ctx.fillStyle = "gray";
+		}
+		ctx.beginPath();
+		ctx.arc(canvas_json[i].x, canvas_json[i].y, 4, 0, 2 * Math.PI);
+		ctx.closePath();
+		ctx.fill();
+		ctx.save();
+	}
+}

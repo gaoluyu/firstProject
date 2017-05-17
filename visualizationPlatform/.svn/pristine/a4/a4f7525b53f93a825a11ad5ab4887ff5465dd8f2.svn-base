@@ -1,0 +1,70 @@
+var mainpath;
+
+function init(_mainpath) {
+	mainpath = _mainpath;
+
+	ajaxUtil({}, mainpath + "/deviceAdmin/getModifiedBeacon",
+			function(response) {
+				var beaconInfo = response.beaconInfo;
+				$("#id").val(beaconInfo.id);
+				$("#building").val(beaconInfo.building);
+				$("#inUse").val(beaconInfo.inUse);
+				if (beaconInfo.id != null)
+					$('#id').attr("disabled", "disabled");
+				$("#description").val(beaconInfo.description);
+				$("#x").val(beaconInfo.x);
+				$("#y").val(beaconInfo.y);
+				$("#floor").val(beaconInfo.floor);
+
+				if (beaconInfo.inUse == 1) {
+					$("input[name='inUse'][data-par='1']").attr("checked",
+							'checked');
+
+				} else {
+					$("input[name='inUse'][data-par='0']").attr("checked",
+							'checked');
+				}
+
+			}, function(response, reason) {
+				alert(reason);
+
+			});
+
+	$("#submit").click(function() {
+		submit();
+	});
+}
+
+/**
+ * 对字段进行合法性检查
+ * 
+ * @returns {Boolean}
+ */
+function check() {
+	return true;
+}
+function submit() {
+	if (!check()) {
+		return false;
+	}
+	var inUse = $("input[name='inUse']:checked").val();
+
+	ajaxUtil({
+		"id" : $("#id").val(),
+		"building" : $("#building").val(),
+		"inUse" : inUse,
+		"description" : $("#description").val(),
+		"x" : $("#x").val(),
+		"y" : $("#y").val(),
+		"floor" : $("#floor").val()
+
+	}, mainpath + "/deviceAdmin/insertBeacon", function(response) {
+		// alert(123);
+		alert(response.msg);
+		window.location.href = mainpath + "/page/beacon";
+	}, function(response, reason) {
+		alert(reason);
+
+	});
+	return false;
+}

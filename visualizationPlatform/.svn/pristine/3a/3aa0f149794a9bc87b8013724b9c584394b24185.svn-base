@@ -1,0 +1,308 @@
+package androidServer.controller;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import androidServer.bean.IndoorBeaconRecord;
+import androidServer.bean.IndoorRecord;
+import androidServer.bean.Inspection;
+import androidServer.bean.Inspector;
+import androidServer.bean.KeepAliveLocation;
+import androidServer.bean.Neighbor;
+import androidServer.bean.Sim;
+import androidServer.service.DBService;
+import androidServer.util.AndroidUtil;
+import androidServer.util.JSONUtil;
+import androidServer.util.SessionUtils;
+import androidServer.util.WebUtil;
+
+@Controller
+@RequestMapping("/location")
+public class LocationController {
+
+	@Autowired
+	DBService dbService;
+
+	@RequestMapping("registry")
+	@ResponseBody
+	Map<String, Object> registry(HttpServletRequest request,
+			HttpServletResponse response, String inspectorString) {
+		System.out.println("registry");
+		if (inspectorString == null)
+			return AndroidUtil.errorResponse(request,
+					AndroidUtil.PARAMETER_ERROR,
+					AndroidUtil.PARAMETER_ERROR_REASON);
+		Inspector inspector = JSONUtil.jsonToObject(inspectorString,
+				Inspector.class);
+		boolean status = dbService.insertInspector(inspector);
+		if (status) {
+			return AndroidUtil.okResponse(request);
+		}
+		return AndroidUtil.errorResponse(request, AndroidUtil.REGISTRY_ERROR,
+				AndroidUtil.REGISTRY_ERROR_REASON);
+
+	}
+
+	@RequestMapping("login")
+	@ResponseBody
+	Map<String, Object> login(HttpServletRequest request,
+			HttpServletResponse response, String username, String password) {
+		System.out.println("login:" + "username:" + username);
+		Inspector inspector = dbService.getInspector(username);
+		if (inspector != null && inspector.getPassword().equals(password)) {
+			SessionUtils.setInspetor(request, inspector);
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("inspector", inspector);
+			map.put("status", AndroidUtil.OK);
+			return map;
+		}
+		return AndroidUtil.errorResponse(request, AndroidUtil.LOGIN_ERROR,
+				AndroidUtil.LOGIN_ERROR_REASON);
+	}
+
+	/**
+	 * 保活查询，收到视为仍在登录，不能因为service出错而不返回
+	 * 
+	 * @param request
+	 * @param response
+	 * @param keepAliveString
+	 * @return
+	 */
+	@SuppressWarnings("finally")
+	@RequestMapping("loginKeepAlive")
+	@ResponseBody
+	Map<String, Object> loginKeepAlive(HttpServletRequest request,
+			HttpServletResponse response, String keepAliveString) {
+		try {
+			if (keepAliveString == null)
+				return AndroidUtil.errorResponse(request,
+						AndroidUtil.PARAMETER_ERROR,
+						AndroidUtil.PARAMETER_ERROR_REASON);
+			KeepAliveLocation kal = JSONUtil.jsonToObject(keepAliveString,
+					KeepAliveLocation.class);
+			Inspector user = SessionUtils.getInspetor(request);
+			kal.setInspector(user.getUsername());
+			dbService.insertKeepAliveLocation(kal);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			return AndroidUtil.okResponse(request);
+		}
+
+	}
+
+	@RequestMapping("insertInspection")
+	@ResponseBody
+	Map<String, Object> insertInspection(HttpServletRequest request,
+			HttpServletResponse response, String inspectionListString) {
+		System.out.println("inspectionListString " + inspectionListString);
+		if (inspectionListString == null)
+			return AndroidUtil.errorResponse(request,
+					AndroidUtil.PARAMETER_ERROR,
+					AndroidUtil.PARAMETER_ERROR_REASON);
+		List<Inspection> inspectionList = JSONUtil.jsonToJavaList(
+				inspectionListString, Inspection.class);
+		dbService.insertInspection(inspectionList);
+
+		return AndroidUtil.okResponse(request);
+
+	}
+
+	@RequestMapping("beaconList")
+	@ResponseBody
+	Map<String, Object> getAvailableBeacon(HttpServletRequest request,
+			HttpServletResponse response, String simString, String province,
+			String city) {
+		System.out.println("mobile request simString \n" + simString
+				+ " province " + province + " city " + city);
+		if (simString == null || province == null
+				|| province.trim().length() == 0 || city == null
+				|| city.trim().length() == 0) {
+			return AndroidUtil.errorResponse(request,
+					AndroidUtil.PARAMETER_ERROR,
+					AndroidUtil.PARAMETER_ERROR_REASON);
+		}
+
+		Sim sim = JSONUtil.jsonToObject(simString, Sim.class);
+		Map<String, Object> data = AndroidUtil.okResponse(request);
+		data.put("list", dbService.getBeaconList(sim, province, city));
+		return data;
+	}
+
+	/**
+	 * android端上传数据的接口
+	 * 
+	 * @param request
+	 * @param response
+	 * @param listRecord
+	 *            对应Indoorrecord的实体列表，但没有dl_bps和ul_bps两项
+	 * @param listBeacon
+	 *            对应indoorBeaconRecord的实体列表
+	 * @param speedList
+	 *            uuidFK,dl_bps和ul_bps三项,uuidFK对应Indoorrecord中的uuid
+	 * @return
+	 */
+	@RequestMapping("uploadIndoorRecord")
+	@ResponseBody
+	Map<String, Object> uploadRecord(HttpServletRequest request,
+			HttpServletResponse response, String listRecord, String listBeacon,
+			String listSpeed) {
+		System.out.println(listBeacon);
+		System.out.println(listSpeed);
+		System.out.println(listRecord);
+
+		List<IndoorRecord> indoorRecords = JSONUtil.jsonToJavaList(listRecord,
+				IndoorRecord.class);
+		List<IndoorBeaconRecord> indoorBeaconRecords = JSONUtil.jsonToJavaList(
+				listBeacon, IndoorBeaconRecord.class);
+		List<Map<String, Object>> speeds = JSONUtil.jsonToJavaList(listSpeed,
+				HashMap.class);
+		// System.out.println("receive " + listObject.size());
+		boolean status = dbService.addIndoorRecords(indoorRecords,
+				indoorBeaconRecords, speeds, SessionUtils.getInspetor(request)
+						.getUsername());
+		Map<String, Object> result = null;
+		if (status)
+			result = AndroidUtil.okResponse(request);
+		else
+			result = AndroidUtil.errorResponse(request,
+					AndroidUtil.UPLOAD_ERROR, AndroidUtil.UPLOAD_ERROR_REASON);
+
+		return result;
+	}
+
+	@RequestMapping("uploadNeighbors")
+	@ResponseBody
+	Map<String, Object> uploadNeighbor(HttpServletRequest request,
+			HttpServletResponse response, String neighbors) {
+		System.out.println(neighbors);
+		
+		List<Neighbor> listObject = JSONUtil.jsonToJavaList(neighbors,
+				Neighbor.class);
+		System.out.println("receive " + listObject.size());
+		boolean status = dbService.addNeighborRecords(listObject);
+
+		Map<String, Object> result = null;
+		if (status)
+			result = AndroidUtil.okResponse(request);
+		else
+			result = AndroidUtil.errorResponse(request,
+					AndroidUtil.UPLOAD_ERROR, AndroidUtil.UPLOAD_ERROR_REASON);
+
+		return result;
+	}
+
+	@RequestMapping("confirmUserName")
+	@ResponseBody
+	Map<String, Object> userName(HttpServletRequest request,
+			HttpServletResponse response, String userNameSet) {
+		// System.out.println("confirmUserName");
+		int existNum = dbService.findUserNameSet(userNameSet);
+
+		Map<String, Object> result = new HashMap<String, Object>();
+
+		if (existNum == 0) {
+
+			result = AndroidUtil.okResponse(request);
+
+		} else {
+			result = AndroidUtil
+					.errorResponse(request, AndroidUtil.REGISTRY_ERROR,
+							AndroidUtil.REGISTRY_NAME_ERROR);
+
+		}
+		return result;
+	}
+
+	@RequestMapping("logout")
+	@ResponseBody
+	Map<String, Object> inspectorLogout(HttpServletRequest request,
+			HttpServletResponse response) {
+		// System.out.println("inspector:logout");
+		SessionUtils.removeInspector(request);
+		Map<String, Object> result = new HashMap<String, Object>();
+		result = AndroidUtil.okResponse(request);
+		return result;
+	}
+
+	/**
+	 * app更新
+	 * 
+	 * @param request
+	 * @param response
+	 * @param version
+	 * @return
+	 */
+	@RequestMapping("check")
+	@ResponseBody
+	public Map<String, Object> getNewApp(HttpServletRequest request,
+			HttpServletResponse response, String version) {
+		// System.out.print("ccccccccc");
+		// String url = null;
+		String description = null;
+		// String oldversion = (String) version.get("version");
+		int isUpdate;
+		// String oldversion = version;
+
+		Map<String, Object> newVersion = dbService.getNewApp();
+		String newversion = (String) newVersion.get("version");
+		// System.out.println(newversion);
+		// System.out.println(version);
+		if (newversion != null && newversion.equals(version)) {
+			// url = null;
+			isUpdate = 0;
+		} else {
+			// url = "/App/" + newversion + ".apk";
+			description = (String) newVersion.get("description");
+			isUpdate = 1;
+		}
+
+		Map<String, Object> map = WebUtil.okResponse(request);
+		// map.put("url", url);
+		map.put("isUpdate", isUpdate);
+		map.put("newVersion", newversion);
+		map.put("description", description);
+		return map;
+	}
+
+	/**
+	 * 
+	 * @param request
+	 * @param response
+	 * @param listTrainData
+	 *            mac, rssi,uuid,marker
+	 * @param username
+	 * @return
+	 */
+	@RequestMapping("trainDataUpload")
+	@ResponseBody
+	public Map<String, Object> trainDataUpload(HttpServletRequest request,
+			HttpServletResponse response, String listTrainData, String username) {
+		// System.out.println(listTrainData);
+		// System.out.println(username);
+		Map<String, Object> map = AndroidUtil.errorResponse(request,
+				AndroidUtil.UPLOAD_ERROR, AndroidUtil.UPLOAD_ERROR_REASON);
+		if (listTrainData != null && username != null) {
+			if ("pyr".equals(username.trim())) {
+				List<Map<String, Object>> records = JSONUtil.jsonToJavaList(
+						listTrainData, Map.class);
+				if (records != null) {
+					dbService.insertTrainDatas(records, username);
+					map = AndroidUtil.okResponse(request);
+				}
+			}
+		}
+		return map;
+	}
+}

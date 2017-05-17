@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.UserMapper">
+
+	<select id="checkingUsername" resultType="String">
+		select username from user 
+		where username=#{username}
+	</select>
+	
+	<select id="selectUser" resultType="User">
+		select * from user
+		where username=#{username}
+	</select>
+	
+	<insert id="insertingUser" parameterType="User">
+
+		insert into
+		User
+		(username,password,telephone,province,city,isAdmin)
+		values
+		(#{item.username},#{item.password},#{item.telephone},#{item.province},#{item.city},0) 
+		
+	</insert>
+	
+	<insert id="insertInitialSetting" parameterType="User">
+		insert into
+		usersetting
+		(userId,operator,netType,province,city,warningValue)
+		values
+		(#{item.username},#{operator},#{netType},#{item.province},#{item.city},#{warningValue}) 
+	</insert>
+	
+	<update id="modifyPassword" >
+		update user
+		set password=#{newpassword}
+		where username=#{username}
+	</update>
+	
+	<select id="getUserSetting" resultType="map">
+		select operator as operator,
+		netType as netType,
+		warningValue as warningValue
+		from usersetting 
+		where userId=#{username}
+	</select>
+	
+	<insert id="updateUserSetting" parameterType="List">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			insert into usersetting
+			(userId,operator,netType,province,city,warningValue)
+			values
+			(#{username},#{item.operator},#{item.netType},#{province},#{city},#{item.warningValue})
+			on DUPLICATE key UPDATE
+			province=#{province},city=#{city},warningValue=#{item.warningValue}
+		</foreach>
+	</insert>
+	
+	<select id="getMessage" resultType="map">
+		select cid as cid, operator as operator,
+		netType as netType,value as value,
+		startTime as statrTime, endTime as endTime,
+		isRead as isRead, id as id
+		from warningbox 
+		where toUserId=#{username}
+		order by startTime
+		limit
+		#{itemStart},#{offset}
+	</select>
+	
+	<select id="getMessageDetail" resultType="map">
+		select w.*,b.*,bi.* 
+		from warningbox w, beacon b ,building bi
+		where w.position = b.id and w.buildingId = bi.id and toUserId=#{username} and w.id=#{id}
+	</select>
+	
+	<update id="modifyMark">
+		update warningbox
+		set isRead=#{mark}
+		where id=#{id} and toUserId=#{username}
+	</update>
+	
+</mapper>

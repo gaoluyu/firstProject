@@ -1,0 +1,73 @@
+/**
+ * 
+ */
+var valid_2G;
+var valid_3G;
+var valid_4G;
+var all_2G;
+var all_3G;
+var all_4G;
+var warning_2G;
+var warning_3G;
+var warning_4G;
+function onSearch() {
+	$("#search").click(function() {
+		alert("dataforPlat");
+		ajaxUtil({
+			"startTime" : getStartTime(),
+			"endTime" : getEndTime(),
+			"network" : $("#networktype").val(),
+			"buildingId" : $("#buildingSearchedId").val(),
+			"floor" : $("#floorSelector").val()
+		}, mainpath + "/buildingStatistic/dataforPlat", function(response) {
+			alert("dataforPlat ok!");
+			alert(JSON.stringify(response));
+			console.log(JSON.stringify(response));
+            alert("tList");
+			var tList = response.tList;
+			for (var i = 0; i < tList.length; i++) {
+				if (tList[i].network == "2G"){
+					valid_2G = tList[i].number;
+				}
+				else if(tList[i].network == "3G"){
+					valid_3G = tList[i].number;
+				}
+				else if(tList[i].network == "4G"){
+					valid_4G = tList[i].number;
+				}		
+			}
+			alert("fList");
+			var fList = response.fList;
+			for (var i = 0; i < fList.length; i++) {
+				if (fList[i].network == "2G"){
+					all_2G = fList[i].number;
+				}
+				else if(fList[i].network == "3G"){
+					all_3G = fList[i].number;
+				}
+				else if(fList[i].network == "4G"){
+					all_4G = fList[i].number;
+				}		
+			}
+			alert("wList");
+			var wList = response.wList;
+			for (var i = 0; i < wList.length; i++) {
+				if (wList[i].network == "2G"){
+					warning_2G = wList[i].number;
+				}
+				else if(wList[i].network == "3G"){
+					warning_3G = wList[i].number;
+				}
+				else if(wList[i].network == "4G"){
+					warning_4G = wList[i].number;
+				}		
+			}
+			//CoverageRatio饼图？？
+			var CoverageRatio_2G = valid_2G/all_2G;
+			var CoverageRatio_3G = valid_3G/all_3G;
+			var CoverageRatio_4G = valid_4G/all_4G;
+			
+		}, function(response, reason) {
+		});
+	});
+}

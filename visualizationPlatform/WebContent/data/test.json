@@ -1,0 +1,59 @@
+{
+	"startTimeInSession" : 1438387200000,
+	"warningBottomlist" : null,
+	"warningValue" : -80,
+	"endTimeInSession" : 1442707200000,
+	"status" : 1,
+	"ciInSession" : null,
+	"list" : [ {
+		"netType" : "暂无网络",
+		"flag" : 0,
+		"name" : "测试1",
+		"province" : "北京",
+		"ci" : 1000001,
+		"longitude" : 116.364614,
+		"latitude" : 39.968559,
+		"city" : "海淀",
+		"flagNumber" : 0
+	}, {
+		"time" : 1440137500000,
+		"netType" : "UMTS",
+		"flag" : 1,
+		"averageStrength" : -77.2381,
+		"name" : "",
+		"province" : "北京",
+		"ci" : 7096522,
+		"longitude" : 116.366411,
+		"latitude" : 39.969846,
+		"operator" : "01",
+		"city" : "海淀",
+		"flagNumber" : 252
+	}, {
+		"time" : 1440660030000,
+		"netType" : "UMTS",
+		"flag" : 2,
+		"averageStrength" : -84.9791,
+		"name" : "",
+		"province" : "北京",
+		"ci" : 7096522,
+		"longitude" : 116.366411,
+		"latitude" : 39.969846,
+		"operator" : "01",
+		"city" : "海淀",
+		"flagNumber" : 191
+	}, {
+		"time" : 1441871476000,
+		"netType" : "UMTS",
+		"flag" : 3,
+		"averageStrength" : -87.0000,
+		"name" : "",
+		"province" : "北京",
+		"ci" : 7096522,
+		"longitude" : 116.366411,
+		"latitude" : 39.969846,
+		"operator" : "01",
+		"city" : "海淀",
+		"flagNumber" : 3
+	} ],
+	"network" : null
+}

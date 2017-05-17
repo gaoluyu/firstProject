@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.IndoorMapper">
+	<select id="selectIndoorMapPoints" resultType="Map" useCache="false">
+		select b.id,AVG(signalStrength) as
+		averageStrength,b.x,b.y,b.description
+		from beacon b left join
+		indoorRecord i on b.id=i.position and cid=#{ci} and i.mnc in
+		(${mncList}) and i.networkType in (${netList})
+		<![CDATA[
+		and time>=#{timeStart} and time<#{timeEnd} where b.building=#{building} and b.inUse = 1 ]]>
+		<if test="floor != 0">
+			and b.floor=#{floor}
+		</if>
+		group by b.id
+
+	</select>
+
+	<select id="selectIndoorList" resultType="IndoorList" useCache="false">
+
+		select b.id as
+		position,b.x,b.y,b.building,AVG(signalStrength) as
+		averageStrength,b.floor,max(signalStrength) as
+		maxRssi,min(signalStrength) as minRssi,b.description,count(cid) as
+		number
+		from beacon b left join
+		indoorRecord i on b.id=i.position
+		<![CDATA[ and cid=#{ci} and time>=#{timeStart} and time<#{timeEnd} and i.mnc in (${mncList}) and i.networkType in (${netList})
+		where
+		b.building=#{building}  and b.inUse=1  ]]>
+		<if test="floor != 0">
+			and b.floor=#{floor}
+		</if>
+		group by b.id
+		order by b.id
+		limit #{itemStart},#{offset}
+	</select>
+
+	<select id="selectIndoorListWithAllCid" resultType="IndoorList"
+		useCache="false">
+		select b.id as
+		position,b.x,b.y,b.building,AVG(signalStrength) as
+		averageStrength,b.floor,max(signalStrength) as
+		maxRssi,min(signalStrength) as minRssi,b.description,count(cid) as
+		number
+		from beacon b left join
+		indoorRecord i on b.id=i.position
+		<![CDATA[ and time>=#{timeStart} and time<#{timeEnd} and i.mnc in (${mncList}) and i.networkType in (${netList})
+		where
+		b.building=#{building}  and b.inUse=1 ]]>
+		<if test="floor != 0">
+			and b.floor=#{floor}
+		</if>
+		group by b.id
+		order by b.id
+		limit #{itemStart},#{offset}
+	</select>
+
+	<select id="selectRssiByDay" resultType="IndoorDate" useCache="false">
+		select
+		CONCAT(YEAR(time),"-",MONTH(time),"-",DAYOFMONTH(time)) as date
+		,AVG(signalStrength) as averageStrength,max(i.signalStrength) as
+		maxRssi,min(i.signalStrength) as minRssi,min(time) as sortTime
+		from
+		indoorRecord
+		i,beacon b
+		where i.position=b.id and i.cid=#{ci} and i.mnc
+		in (${mncList}) and i.networkType in (${netList}) and
+		b.id=#{beaconId}
+		group
+		by date
+		order by sortTime
+
+	</select>
+
+	<!-- select -->
+	<!-- w.ci,b.id as buildingId,b.name,b.unit -->
+	<!-- from workParameter -->
+	<!-- w,building b -->
+	<!-- where -->
+	<!-- w.ci = -->
+	<!-- b.ci and -->
+	<!-- w.province=#{province} -->
+	<!-- and -->
+	<!-- w.city=#{city} -->
+	<!-- group -->
+	<!-- by -->
+	<!-- b.id -->
+
+	<select id="selectBuildings" resultType="Map" useCache="false">
+
+		select
+		bwp.ci,bwp.network,bwp.buildingId,b.name,b.unit
+		from building
+		b,buildingWorkParameter bwp
+		where b.id=bwp.buildingId and
+		b.province=#{province} and b.city=#{city}
+		group by
+		bwp.buildingId,bwp.network,bwp.ci
+
+	</select>
+
+	<select id="selectFloor" resultType="Map" useCache="false">
+		select
+		floorUpGround,floorUnderGround from building where id=#{buildingId}
+	</select>
+	
+	<select id="selectIndoorMapHeatPoints" resultType="Map" useCache="false">
+		select i.position as position,i.signalStrength,ib.distance 
+		from beacon b ,indoorRecord i ,indoorbeaconrecord ib 
+		where b.building=#{building} and b.inUse = 1 and 
+		b.id=i.position and cid=#{ci} and i.mnc in
+		(${mncList}) and i.networkType in (${netList})
+		and i.uuid=ib.uuidFK
+		<![CDATA[
+		and time>=#{timeStart} and time<#{timeEnd} ]]>
+		<if test="floor != 0">
+			and b.floor=#{floor}
+		</if>
+
+	</select>
+</mapper>

@@ -1,0 +1,68 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" charset=utf-8 " />
+<title>登录系统</title>
+<script src="${mainpath}/js/jquery-1.11.2.min.js"></script>
+<script src="${mainpath}/js/bootstrap.min.js"></script>
+<script src="${mainpath}/js/utils.js"></script>
+<script src="${mainpath}/js/login.js"></script>
+<link rel="stylesheet"
+	href="http://cdn.bootcss.com/twitter-bootstrap/3.2.0/css/bootstrap.min.css" />
+<link rel="stylesheet" href="${mainpath}/css/buttons.css" />、
+<style type="text/css">
+.form-signin {
+	max-width: 330px;
+}
+.login {
+	border: 2px #66A3D2 solid;
+	border-radius: 1em;
+	padding: 15px;
+	margin: auto;
+	position: absolute;
+	left: 40%;
+	top: 30%
+}
+
+.btn-block {
+	width: 50px;
+}
+.checkbox {
+	margin-left: 20px
+}
+.form-signin-heading {
+	text-align: center;
+}
+body {
+	background-image: url(${mainpath}/images/background.png);
+}
+</style>
+</head>
+<body>
+	<img src="${mainpath}/images/title .png"
+		style="position: absolute; left: 33%; top: 15%">
+	<div class="login">
+		<form class="form-signin" role="form" name="form1" onsubmit="return false">
+			<h2 class="form-signin-heading">欢迎登录</h2>
+			<input type="text" class="form-control" placeholder="User name"
+				name="usernm" reqired autofocus /> <input type="password"
+				class="form-control" placeholder="Password" name="userpwd"
+				onclick="" / reqired /> <label class="checkbox"> 
+			</label>
+
+		</form>
+		&nbsp;&nbsp;&nbsp;&nbsp;
+		<button class="button button-pill button-primary" onClick="login()" >登录</button>
+		&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+		<button class="button button-pill button-primary" onclick="newDoc()">注册</button>
+	</div>
+</body>
+</html>
+<script>
+	$(document).ready(function() {
+		loginInit("${mainpath}");
+	});
+</script>

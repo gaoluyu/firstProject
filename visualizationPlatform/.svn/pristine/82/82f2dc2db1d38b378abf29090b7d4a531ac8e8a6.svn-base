@@ -1,0 +1,32 @@
+package androidServer.util;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+public class JSONUtil {
+	public static final ObjectMapper mapper = new ObjectMapper();
+
+	public static <T> List<T> jsonToJavaList(String json, Class<?> tClass) {
+		JavaType type = mapper.getTypeFactory().constructParametricType(ArrayList.class, tClass);
+		List<T> returnValue = null;
+		try {
+			returnValue = mapper.readValue(json, type);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return returnValue;
+	}
+}

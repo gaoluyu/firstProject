@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.AndroidMapper">
+	<select id="getAvailableBeaconList" resultType="Map" useCache="false">
+		select building.name as buildingName,beacon.id as mac,
+		beacon.building
+		as
+		buildingNumber,beacon.description as
+		description,beacon.floor as
+		floor
+		from
+		beacon,building where
+		beacon.building=building.id and
+		building.province=#{province} and
+		building.city=#{city} and
+		beacon.inUse=1;
+	</select>
+
+	<select id="getTotalBeaconNumber" resultType="long" useCache="false">
+
+		select count(*) from beacon b,building
+		where b.building=building.id and
+		building.id=#{building}
+		<if test="floor != null">
+			and b.floor=#{floor}
+		</if>
+		and b.inUse=1
+
+	</select>
+
+	<insert id="insertIndoor" parameterType="List">
+		insert into indoorRecord
+		(signalStrength,cid,position,time,netType,networkType,lac,mnc,uuid,rsrp,rsrq,sinr,dl_bps,ul_bps,imsi,inspector)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.signalStrength},#{item.cid},#{item.position},#{item.time},
+			#{item.netType},#{item.networkType},#{item.lac},#{item.mnc},
+			#{item.uuid},#{item.rsrp},#{item.rsrq},#{item.sinr},-1,
+			-1,#{item.imsi},#{inspector})
+		</foreach>
+	</insert>
+
+	<insert id="insertIndoorBeaconRecord" parameterType="List">
+		insert into indoorbeaconrecord
+		(uuidFK,mac,beaconRssi,bTxPower,distance)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.uuidFK},#{item.mac},#{item.beaconRssi},#{item.bTxPower},#{item.distance})
+		</foreach>
+	</insert>
+
+	<update id="updateIndoorRecord" parameterType="Map">
+		<foreach collection="list" item="item" index="index"
+			separator=";">
+			update indoorRecord set
+			dl_bps=#{item.dl_bps},ul_bps=#{item.ul_bps} where uuid=#{item.uuidFK}
+		</foreach>
+	</update>
+
+	<insert id="insertNeighbor" parameterType="List">
+		insert into neighbor
+		(uuidFK,cid,signalStrength,network,lac,time)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.uuidFK},#{item.cid},#{item.signalStrength},#{item.network},#{item.lac},#{item.time})
+		</foreach>
+	</insert>
+
+	<insert id="insertOrUpdateSim" parameterType="Sim">
+		insert into
+		sim(imsi,version,imei,phoneName,operatingSystem,phoneType,phoneNumber,updateTime)
+		select
+		#{sim.imsi},
+		IF((select count(*) from sim where
+		imsi=#{sim.imsi})=0,1,
+		(select
+		max(version)+1 from sim where
+		imsi=#{sim.imsi} group by imsi)),
+		#{sim.imei},
+		#{sim.phoneName},
+		#{sim.operatingSystem},#{sim.phoneType},#{sim.phoneNumber},now()
+		from
+		DUAL
+		where
+		not
+		EXISTS
+		(select imsi from sim where imsi=#{sim.imsi} and
+		imei=#{sim.imei} and
+		phoneName=#{sim.phoneName} and
+		operatingSystem=#{sim.operatingSystem}
+		and
+		phoneType=#{sim.phoneType}
+		and phoneNumber=#{sim.phoneNumber})
+	</insert>
+
+	<insert id="insertInspector" parameterType="Inspector">
+		insert into
+		inspector(username,password,phoneNumber,imsi,imei,province,city,companyName,registryTime)
+		values
+		(#{inspector.username},#{inspector.password},#{inspector.phoneNumber},#{inspector.imsi},
+		#{inspector.imei},#{inspector.province},#{inspector.city},#{inspector.companyName},now())
+	</insert>
+
+	<select id="selectInspector" resultType="Inspector">
+		select
+		username,password,phoneNumber,imsi,imei,province,city,companyName,registryTime
+		from inspector where username=#{username};
+	</select>
+
+	<insert id="insertInspection" parameterType="List">
+		insert into inspection
+		(username,startTime,endTime,duration,buildingId,province,city,longitude,latitude)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(#{item.username},#{item.startTime},#{item.endTime},#{item.duration},
+			#{item.buildingId},#{item.province},#{item.city},#{item.longitude},#{item.latitude})
+		</foreach>
+	</insert>
+
+	<insert id="insertTrainDatas" parameterType="List">
+		insert into positionTrainData
+		(buildingId,username,mac,rssi,uuid,marker,time)
+		values
+		<foreach collection="list" item="item" index="index"
+			separator=",">
+			(1,#{username},#{item.mac},#{item.rssi},
+			#{item.uuid},#{item.marker},now())
+		</foreach>
+	</insert>
+
+	<insert id="insertTrainMap" parameterType="Map">
+		INSERT IGNORE INTO positiontrainmap (marker,x,y) VALUES(#{marker},#{X},#{Y})
+	</insert>
+</mapper>

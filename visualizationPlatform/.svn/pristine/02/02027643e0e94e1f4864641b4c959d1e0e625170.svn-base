@@ -1,0 +1,90 @@
+var mainpath;
+function init(_mainpath) {
+	mainpath = _mainpath;
+//	loadMessageList();
+	printMessageList("#messagelist","","",1,10);
+}
+
+function loadMessageList() {
+	ajaxUtil({
+		"startPage":1,
+		"pageSize":10
+	}, mainpath + '/userAdmin/messageList', function(response) {
+		alert(response.msg);
+		alert(response.list);
+		var list = response.User;
+		var province = list.province;
+		var city = list.city;
+		var username = list.username;
+		var telephone = list.telephone;
+		var html = "<dt>用户名</dt><dd>" + username + "</dd><br/>";
+		html += "<dt>省份</dt><dd>" + province + "</dd><br/>";
+		html += "<dt>市地</dt><dd>" + city + "</dd><br/>";
+		html += "<dt>手机号</dt><dd>" + telephone + "</dd><br/>";
+		$("#userInfo").html(html);
+	}, function(response, reason) {
+		alert(reason);
+	});
+}
+function printMessageList(tableId, url, data, pageNo, pageSize) {
+	ajaxUtil({
+		"startPage" : pageNo,
+		"pageSize" : pageSize
+	}, mainpath + "/userAdmin/messageList", function(response) {
+		alert("hello");
+		var list = response.list;
+		var totalCount = list.length;
+		var table = $(tableId);
+		
+//		var theHtml = "<thead>"
+//				+ "<tr><th>楼编号</th><th>楼层</th><th>位置</th><th>描述</th>"
+//				+ "<th>平均场强（dbm）</th><th>最大场强(dbm)</th><th>最小场强(dbm)"
+//				+ "</th><th>查看场强走势</th></tr></thead>";
+//		theHtml += "<tbody>"
+//		for (var i = 0; i < list.length; i++) {
+//			var style=null;
+//			var avers = list[i].averageStrength;
+//			if(avers<-110){
+//				style="danger";
+//			}else if(avers<-90&&avers>-110){
+//				style="warning";
+//			}else if(avers<0&&avers>-90){
+//				style="success";
+//			}else{
+//				style="active";
+//			}
+//			theHtml += "<tr class='"+style+"'>";
+//			theHtml += "<td>" + list[i].building + "</td>";
+//			theHtml += "<td>" + list[i].floor + "</td>";
+//			theHtml += "<td>" + list[i].position + "</td>";
+//			theHtml += "<td>" + list[i].description + "</td>";
+//			theHtml += "<td>" + list[i].averageStrength + "</td>";
+//			theHtml += "<td>" + list[i].maxRssi + "</td>";
+//			theHtml += "<td>" + list[i].minRssi + "</td>";
+//			theHtml += "<td><a href='javascript:loadBeaconCurve(\""
+//					+ list[i].position + "\");'>查看走势</a></td>";
+//			theHtml += "</tr>";
+//		}
+//		theHtml += "</tbody>";
+//		table.html(theHtml);
+		var totalPage = Math.ceil(totalCount / pageSize);
+		printPage(tableId, document.getElementById("paging"), totalPage, url,
+				data, pageNo, pageSize, "printMessageList");
+		setIcRank();
+	}, function(response, reason) {
+		alert(response.msg);
+	});
+
+}
+function submit() {
+	ajaxUtil({
+		"oldpassword" : $("#oldpassword").val(),
+		"newpassword" : $("#ps").val()
+	}, mainpath + "/userAdmin/modifyPassword", function(response) {
+		alert(response.msg);
+		window.location.href = "./login";
+	}, function(response, reason) {
+		alert(response.msg);
+	});
+}
+

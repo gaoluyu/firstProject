@@ -1,0 +1,224 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<title>添加小区</title>
+<link rel="stylesheet" href="${mainpath}/css/default.css"
+	type="text/CSS" />
+<link rel="stylesheet"
+	href="http://cdn.bootcss.com/twitter-bootstrap/3.2.0/css/bootstrap.min.css" />
+<script src="${mainpath}/js/jquery-1.11.2.min.js"></script>
+<script src="${mainpath}/js/bootstrap.min.js"></script>
+<script src="${mainpath}/js/utils.js"></script>
+<script src="${mainpath}/js/addCell.js"></script>
+
+<script type="text/javascript" src="${mainpath}/js/ajaxfileupload.js"></script>
+<script type="text/javascript"
+	src="http://api.map.baidu.com/api?v=2.0&ak=CB2ede775afeb6e413abd40261396a69"></script>
+</head>
+<body class="bodybg">
+	<div class="container-fluid">
+		<jsp:include page="./common/header.jsp" />
+		<div class="row-fluid">
+			<div>
+				<jsp:include page="./common/nav.jsp" />
+
+				<div class="col-md-10 content">
+					<div id="legend" class="">
+						<legend class="">添加小区</legend>
+					</div>
+					<dl class="dl-horizontal">
+						<dt>
+							<label class="control-label">省份</label>
+						</dt>
+						<dd>
+							<select id="province" class="input-xlarge" style="width: 130px">
+							</select>
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">市地</label>
+						</dt>
+						<dd>
+							<select id="city" class="input-xlarge" style="width: 130px">
+							</select>
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">县区</label>
+						</dt>
+						<dd>
+							<div class="controls">
+								<input id="region" type="text" placeholder="请输入县区"
+									class="input-xlarge">
+							</div>
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">网络类型</label>
+						</dt>
+						<dd>
+							<select id="network" class="input-xlarge" style="width: 130px"
+								onchange="networkChanged()">
+								<option value="移动3G" selected>移动3G</option>
+								<option value="移动2G">移动2G</option>
+								<option value="移动4G">移动4G</option>
+								<option value="联通3G">联通3G</option>
+								<option value="联通2G">联通2G</option>
+								<option value="联通4G">联通4G</option>
+								<option value="电信3G">电信3G</option>
+								<option value="电信2G">电信2G</option>
+								<option value="电信4G">电信4G</option>
+							</select>
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">小区ID</label>
+						</dt>
+						<dd>
+							<input id="ci" type="text" placeholder="请输入小区的ID"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<div id="enodebDiv" class="control-group">
+							<dt>
+								<label class="control-label">eNodeB</label>
+							</dt>
+							<dd>
+								<div class="controls">
+									<input id="enodeb" type="text" placeholder="请输入enodeb"
+										class="input-xlarge">
+								</div>
+							</dd>
+							<br />
+						</div>
+						<dt>
+							<label class="control-label">LAC</label>
+						</dt>
+						<dd>
+							<input id="lac" type="text" placeholder="请输入LAC"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">频段</label>
+						</dt>
+						<dd>
+							<input id="freqChannel" type="text" placeholder="请输入信号频段"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label" for="input01">小区英文名称</label>
+						</dt>
+						<dd>
+							<input id="cellNameEng" type="text" placeholder="请输入小区英文名称"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">小区中文名称</label>
+						</dt>
+						<dd>
+							<input id="cellNameCh" type="text" placeholder="请输入小区中文名称"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">小区地址</label>
+						</dt>
+						<dd>
+							<input id="cellAddress" type="text" placeholder="请输入小区详细地址"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label" for="input01">归属区域</label>
+						</dt>
+						<dd>
+							<input id="belonging" type="text" placeholder="请输入归属区域"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label" for="input01">覆盖场景</label>
+						</dt>
+						<dd>
+							<input id="scene" type="text" placeholder="请输入覆盖场景"
+								class="input-xlarge">
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label">覆盖类型</label>
+						</dt>
+						<dd>
+							<input type="radio" value="1" data-par="1" name="isIndoor"
+								checked="checked"> 室内 <input type="radio" value="0"
+								data-par="0" name="isIndoor"> 室外
+
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label" for="input01">经纬度坐标</label>
+						</dt>
+						<dd>
+							<input type="text" id="lng" placeholder="经度坐标"
+								class="input-xlarge"> <input type="text" id="lat"
+								placeholder="纬度坐标" class="input-xlarge">
+							<button class="btn btn-info" onclick="mark()">定位</button>
+							<br /> <br />
+							<div id="allmap"></div>
+						</dd>
+						<br />
+						<dt>
+							<label class="control-label"></label>
+						</dt>
+						<dd>
+							<button id="submit" class="btn btn-success">添加</button>
+						</dd>
+					</dl>
+				</div>
+			</div>
+		</div>
+	</div>
+
+</body>
+<style type="text/css">
+#allmap {
+	width: 50%;
+	height: 200px;
+}
+</style>
+<script type="text/javascript">
+	var map = new BMap.Map("allmap");
+	map.centerAndZoom(new BMap.Point(116.404, 39.915), 11);
+	var marker = new BMap.Marker();
+	function getInfo(e) {
+		//map.clearOverlay();
+		var lng = e.point.lng;
+		var lat = e.point.lat;
+		var point = new BMap.Point(lng, lat);
+		$("#lng")[0].value = lng;
+		$("#lat")[0].value = lat;
+		marker.setPosition(point);//设置标注的地理坐标
+		map.addOverlay(marker);
+	}
+	map.addEventListener("click", getInfo);
+	function mark() {
+		var lng = $("#lng").val();
+		var lat = $("#lat").val();
+		var point = new BMap.Point(lng, lat);
+		map.setCenter(point);
+		marker.setPosition(point); //设置标注的地理坐标map.addOverlay(marker); // 将标注添加到地图中
+	}
+</script>
+<script type="text/javascript">
+	//var fileName;
+
+	$(document).ready(function() {
+		addInit("${mainpath}");
+
+	});
+</script>
+</html>

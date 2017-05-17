@@ -1,0 +1,181 @@
+package androidServer.util;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+import androidServer.bean.WorkParameter;
+
+
+public class EXCELUtil {
+	
+	
+	public static String getPostfix(String path) {
+        if (path == null || Common.EMPTY.equals(path.trim())) {
+            return Common.EMPTY;
+        }
+        if (path.contains(Common.POINT)) {
+            return path.substring(path.lastIndexOf(Common.POINT) + 1, path.length());
+        }
+        return Common.EMPTY;
+    }
+	
+	
+	public static List<WorkParameter> readExcel(String path) throws IOException {
+        if (path == null || Common.EMPTY.equals(path)) {
+            return null;
+        } else {
+            String postfix = getPostfix(path);
+            if (!Common.EMPTY.equals(postfix)) {
+                if (Common.OFFICE_EXCEL_2003_POSTFIX.equals(postfix)) {
+                    return readXls(path);
+                } else if (Common.OFFICE_EXCEL_2010_POSTFIX.equals(postfix)) {
+                    return readXlsx(path);
+                }
+            } else {
+                System.out.println(path + Common.NOT_EXCEL_FILE);
+            }
+        }
+        return null;
+    }   
+	
+	public static List<WorkParameter> readXlsx(String path) throws IOException {
+        System.out.println(Common.PROCESSING + path);
+        InputStream is = new FileInputStream(path);
+        @SuppressWarnings("resource")
+		XSSFWorkbook xssfWorkbook = new XSSFWorkbook(is);
+        WorkParameter workParameter = null;
+        List<WorkParameter> list = new ArrayList<WorkParameter>();
+        // Read the Sheet
+        for (int numSheet = 0; numSheet < xssfWorkbook.getNumberOfSheets(); numSheet++) {
+            XSSFSheet xssfSheet = xssfWorkbook.getSheetAt(numSheet);
+            if (xssfSheet == null) {
+                continue;
+            }
+            // Read the Row
+            for (int rowNum = 1; rowNum <= xssfSheet.getLastRowNum(); rowNum++) {
+                XSSFRow xssfRow = xssfSheet.getRow(rowNum);
+                if (xssfRow != null) {
+                	workParameter = new WorkParameter();
+                    String province = xssfRow.getCell(0).getStringCellValue();
+                    XSSFCell city = xssfRow.getCell(1);
+                   // XSSFCell ci = xssfRow.getCell(2);
+                    String network = xssfRow.getCell(2).getStringCellValue();
+                    double ci = xssfRow.getCell(3).getNumericCellValue();
+                    double lac = xssfRow.getCell(4).getNumericCellValue();
+                    double freqChannel = xssfRow.getCell(5).getNumericCellValue();
+                    XSSFCell cellNameEng = xssfRow.getCell(6);
+                    XSSFCell cellNameCh = xssfRow.getCell(7);
+                    XSSFCell cellAddress = xssfRow.getCell(8);
+                    double longitude = xssfRow.getCell(9).getNumericCellValue();
+                    double latitude = xssfRow.getCell(10).getNumericCellValue();
+                    XSSFCell belonging = xssfRow.getCell(11);
+                    String scene = xssfRow.getCell(14).getStringCellValue();
+                    String converageType = xssfRow.getCell(15).getStringCellValue();
+                    workParameter.setProvince(province);
+                    workParameter.setCity(String.valueOf(city));
+                    workParameter.setNetwork(network);
+                    workParameter.setCi(String.valueOf((int)ci));
+                    workParameter.setLac(String.valueOf((int)lac));
+                    workParameter.setFreqChannel((int)freqChannel);
+                    workParameter.setCellNameEng(String.valueOf(cellNameEng));
+                    workParameter.setCellNameCh(String.valueOf(cellNameCh));
+                    workParameter.setCellAddress(String.valueOf(cellAddress));
+                    workParameter.setLongitude(Double.valueOf(longitude));
+                    workParameter.setLatitude(Double.valueOf(latitude));
+                    workParameter.setBelonging(String.valueOf(belonging));
+                    workParameter.setScene(scene);
+                    workParameter.setConverageType(converageType);
+                    if(converageType.equals("室内")){
+                    	workParameter.setIsIndoor(1);
+                    }else{
+                    	workParameter.setIsIndoor(0);
+                    }
+                    list.add(workParameter);
+                }
+            }
+        }
+        return list;
+    }
+
+    /**
+     * Read the Excel 2003-2007
+     * @param path the path of the Excel
+     * @return
+     * @throws IOException
+     */
+    @SuppressWarnings("null")
+	public static List<WorkParameter> readXls(String path) throws IOException {
+        System.out.println(Common.PROCESSING + path);
+        InputStream is = new FileInputStream(path);
+        @SuppressWarnings("resource")
+		HSSFWorkbook hssfWorkbook = new HSSFWorkbook(is);
+        WorkParameter workParameter = null;
+        List<WorkParameter> list = new ArrayList<WorkParameter>();
+        // Read the Sheet
+        for (int numSheet = 0; numSheet < hssfWorkbook.getNumberOfSheets(); numSheet++) {
+            HSSFSheet hssfSheet = hssfWorkbook.getSheetAt(numSheet);
+            if (hssfSheet == null) {
+                continue;
+            }
+            // Read the Row
+            for (int rowNum = 1; rowNum <= hssfSheet.getLastRowNum(); rowNum++) {
+                HSSFRow hssfRow = hssfSheet.getRow(rowNum);
+                if (hssfRow != null) {
+                	String province = hssfRow.getCell(0).getStringCellValue();
+                	HSSFCell city = hssfRow.getCell(1);
+                	String network = hssfRow.getCell(2).getStringCellValue();
+                	double ci = hssfRow.getCell(3).getNumericCellValue();
+                    double lac = hssfRow.getCell(4).getNumericCellValue();
+                    double freqChannel = hssfRow.getCell(5).getNumericCellValue();
+                    HSSFCell cellNameEng = hssfRow.getCell(6);
+                    HSSFCell cellNameCh = hssfRow.getCell(7);
+                    HSSFCell cellAddress = hssfRow.getCell(8);
+                    double longitude = hssfRow.getCell(9).getNumericCellValue();
+                    double latitude = hssfRow.getCell(10).getNumericCellValue();
+                    HSSFCell belonging = hssfRow.getCell(11);
+                    HSSFCell scene = hssfRow.getCell(14);
+                    String converageType = hssfRow.getCell(15).getStringCellValue();
+                    workParameter.setProvince(province);
+                    workParameter.setCity(String.valueOf(city));
+                    workParameter.setNetwork(network);
+                    workParameter.setCi(String.valueOf((int)ci));
+                    workParameter.setLac(String.valueOf((int)lac));
+                    workParameter.setFreqChannel((int)freqChannel);
+                    workParameter.setCellNameEng(String.valueOf(cellNameEng));
+                    workParameter.setCellNameCh(String.valueOf(cellNameCh));
+                    workParameter.setCellAddress(String.valueOf(cellAddress));
+                    workParameter.setLongitude(Double.valueOf(longitude));
+                    workParameter.setLatitude(Double.valueOf(latitude));
+                    workParameter.setBelonging(String.valueOf(belonging));
+                    workParameter.setScene(String.valueOf(scene));
+                    workParameter.setConverageType(String.valueOf(converageType));
+                    if(converageType.equals("室内")){
+                    	workParameter.setIsIndoor(1);
+                    }else{
+                    	workParameter.setIsIndoor(0);
+                    }
+                    list.add(workParameter);
+                }
+            }
+        }
+        return list;
+    }
+    
+    public static List<WorkParameter> getExcelContent(String path) throws IOException{
+    	List<WorkParameter> list = readExcel(path);
+    	return list; 	
+    }
+    
+}

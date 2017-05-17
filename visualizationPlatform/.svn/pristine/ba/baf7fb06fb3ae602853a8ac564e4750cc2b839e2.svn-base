@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="androidServer.mapper.LTEStatisticMapper">
+	<select id="selectRsrpRsrq" resultType="Map">
+		SELECT i.rsrp as rsrp,i.rsrq as rsrq
+		FROM `indoorrecord` i JOIN
+		`beacon` b
+		on i.position=b.id
+		where b.building = #{buildingId}
+		<if test="floor!=0">
+			and b.floor=#{floor}
+		</if>
+		and b.inUse=1
+		and rsrp is not NULL and rsrq is not NULL
+		and
+		i.networkType='LTE'
+		and i.mnc in (${mncList})
+		and
+		<![CDATA[ 
+		i.time >=#{startTime} and i.time <#{endTime} 
+		and i.cid in (select ci from
+		buildingworkparameter 
+		where buildingId = #{buildingId})
+		]]>
+	</select>
+
+	<select id="selectCDFbps" resultType="Map">
+		set @row=0;
+		set @num=0;
+		SELECT
+		<if test="isDown == 1">
+			dl_bps,
+		</if>
+		<if test="isDown == 0">
+			ul_bps,
+		</if>
+		max(@row:=@row+1)/@num as
+		per FROM
+		(
+		SELECT
+		<if test="isDown == 1">
+			dl_bps,
+		</if>
+		<if test="isDown == 0">
+			ul_bps,
+		</if>
+		@num:=@num+1
+		as total
+		FROM
+		indoorrecord i where
+		<![CDATA[
+		i.time >=#{startTime} and i.time <#{endTime} 
+		]]>
+		<if test="isDown == 1">
+			AND i.dl_bps is not NULL
+			AND i.dl_bps !=-1
+		</if>
+		<if test="isDown == 0">
+			AND i.ul_bps is not NULL
+			AND i.ul_bps !=-1
+		</if>
+		AND i.mnc IN(${mncList})
+		AND
+		i.networkType ='LTE'
+		AND
+		i.position in(
+		SELECT b.id FROM `beacon` b where
+		b.building=#{buildingId}
+		<if test="floor!=0">
+			and b.floor=#{floor}
+		</if>
+		and b.inUse = 1
+		)
+
+		and i.cid in
+		(select ci from
+		buildingworkparameter where
+		buildingId=#{buildingId})
+
+		ORDER BY
+		<if test="isDown == 1">
+			i.dl_bps
+		</if>
+		<if test="isDown == 0">
+			i.ul_bps
+		</if>
+		) t
+		group by
+		<if test="isDown == 1">
+			dl_bps
+		</if>
+		<if test="isDown == 0">
+			ul_bps
+		</if>
+		;
+	</select>
+
+</mapper>	

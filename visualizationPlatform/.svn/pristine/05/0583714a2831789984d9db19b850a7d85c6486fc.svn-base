@@ -1,0 +1,91 @@
+var mainpath;
+function init(_mainpath) {
+	mainpath = _mainpath;
+	loadUserInfo();
+}
+
+function loadUserInfo() {
+	ajaxUtil({}, mainpath + '/userAdmin/userInfo', function(response) {
+		var list = response.User;
+		var province = list.province;
+		var city = list.city;
+		var username = list.username;
+		var telephone = list.telephone;
+		var html = "<dt>用户名</dt><dd>" + username + "</dd><br/>";
+		html += "<dt>省份</dt><dd>" + province + "</dd><br/>";
+		html += "<dt>市地</dt><dd>" + city + "</dd><br/>";
+		html += "<dt>手机号</dt><dd>" + telephone + "</dd><br/>";
+		$("#userInfo").html(html);
+	}, function(response, reason) {
+		alert(reason);
+	});
+}
+
+function submit() {
+	ajaxUtil({
+		"oldpassword" : $("#oldpassword").val(),
+		"newpassword" : $("#ps").val()
+	}, mainpath + "/userAdmin/modifyPassword", function(response) {
+		alert(response.msg);
+		window.location.href = "./login";
+	}, function(response, reason) {
+		alert(response.msg);
+	});
+}
+
+function Word() {
+	var filter = /^\s*[.A-Za-z0-9_-]{6,18}\s*$/;
+	var PassWord = $("#ps").val();
+	var oldPassWord = $("#oldpassword").val();
+	if (PassWord != oldPassWord) {
+		if (!filter.test(PassWord)) {
+			$("#Pass").html("密码格式不正确，请使用6-18位字母和数字及下划线，注意不要使用空格");
+			$("#Pass").prepend(
+					"<span class='glyphicon glyphicon-remove'></span>");
+			$("#Pass").css("color", "red");
+			$("#Pass").css("font-size", "small");
+			return false;
+		} else {
+			$("#Pass").html("该密码可用");
+			$("#Pass").prepend("<span class='glyphicon glyphicon-ok'></span>");
+			$("#Pass").css("color", "green");
+			$("#Pass").css("font-size", "small");
+			return true;
+		}
+	} else{
+		$("#Pass").html("该密码与原密码相同，请重新填写");
+		$("#Pass").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Pass").css("color", "red");
+		$("#Pass").css("font-size", "small");
+		return false;
+	}
+}
+function Re_Word() {
+	var re_PassWord = $("#reps")[0].value;
+	var PassWord = $("#ps")[0].value;
+	if (Word() == true) {
+		if (re_PassWord != PassWord) {
+			$("#Re_Pass").html("两次输入密码不一致，请重新填写");
+			$("#Re_Pass").prepend(
+					"<span class='glyphicon glyphicon-remove'></span>");
+			$("#Re_Pass").css("color", "red");
+			$("#Re_Pass").css("font-size", "small");
+			return false;
+		} else {
+			$("#Re_Pass").html("两次密码输入一致");
+			$("#Re_Pass").prepend(
+					"<span class='glyphicon glyphicon-ok'></span>");
+			$("#Re_Pass").css("color", "green");
+			$("#Re_Pass").css("font-size", "small");
+			return true;
+		}
+	} else {
+		$("#Re_Pass").html("请确认第一遍密码输入是否符合规范");
+		$("#Re_Pass").prepend(
+				"<span class='glyphicon glyphicon-remove'></span>");
+		$("#Re_Pass").css("color", "red");
+		$("#Re_Pass").css("font-size", "small");
+		return false;
+	}
+}

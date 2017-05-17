@@ -1,0 +1,109 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+	pageEncoding="UTF-8"%>
+<!doctype html>
+<head>
+<meta charset=utf-8 />
+<title>LTE室内覆盖分析</title>
+<link rel="stylesheet" href="${mainpath}/css/default.css" />
+<link rel="stylesheet"
+	href="http://cdn.bootcss.com/twitter-bootstrap/3.2.0/css/bootstrap.min.css" />
+<link rel="stylesheet"
+	href="${mainpath}/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" href="${mainpath}/css/jquery-ui.min.css" />
+
+<script src="${mainpath}/js/jquery-1.11.2.min.js"></script>
+<script src="${mainpath}/js/bootstrap.min.js"></script>
+<script
+	src="http://api.map.baidu.com/api?v=2.0&ak=CB2ede775afeb6e413abd40261396a69"></script>
+<script type="text/javascript"
+	src="http://api.map.baidu.com/library/Heatmap/2.0/src/Heatmap_min.js"></script>
+<script src="${mainpath}/js/bootstrap-datetimepicker.js"></script>
+<script src="${mainpath}/js/bootstrap-datetimepicker.fr.js"></script>
+<script src="${mainpath}/js/jquery-ui.min.js"></script>
+<script src="${mainpath}/js/utils.js"></script>
+<script src="${mainpath}/js/search.js"></script>
+
+<script src="${mainpath}/js/LTEStatistic.js"></script>
+
+<script type="text/javascript"
+	src="http://cdn.hcharts.cn/highcharts/highcharts.js"></script>
+<script type="text/javascript"
+	src="http://cdn.hcharts.cn/highcharts/highcharts-3d.js"></script>
+<script>
+	$(function() {
+		$("#first").removeClass("collapsed");
+		$("#first").attr("aria-expanded", "true");
+		$("#pointDistribution").removeClass("in");
+		$("#pointDistribution").attr("aria-expanded", "true");
+		$("#pointDistribution").css("height", "111px");
+	});
+</script>
+</head>
+<body class="bodybg">
+	<div class="container-fluid">
+		<jsp:include page="./common/header.jsp" />
+		<div class="row-fluid">
+			<div>
+				<jsp:include page="./common/nav.jsp" />
+
+				<div class="col-md-10 content">
+					<div class="row-fluid" style="margin-bottom: 65px">
+						<div class="col-md-2">
+							<label>起始时间</label> <input class=" form-control inputs"
+								type="text" value="" id="starttime" />
+						</div>
+						<div class="col-md-2">
+							<label>结束时间</label> <input type="text"
+								class="form-control inputs " value="" id="endtime" />
+						</div>
+
+						<div class="col-md-2">
+							<label>网络</label> <select id="networktype"
+								class="form-control inputs">
+								<option value="移动">移动</option>
+								<option value="联通">联通</option>
+								<option value="电信">电信</option>
+							</select>
+						</div>
+						<div class="col-md-2">
+							<label>楼</label> <input id="buildingSearch"
+								class="form-control inputs" /> <input id="buildingSearchedId"
+								type="hidden" />
+						</div>
+
+						<div class="col-md-2">
+							<label>楼层</label> <select id="floorSelector"
+								class="form-control inputs">
+								<option>请先选择小区</option>
+							</select>
+						</div>
+
+						<div class="col-md-2">
+							<a> </a><br>
+							<button id="search" class="btn btn-info inputs" type="button">筛选</button>
+						</div>
+					</div>
+				<div id="container_1" class="graphs"></div>
+				<div id="container_1_text" class="graphs_text"></div>
+				<div id="container_2" class="graphs"></div>
+				<div id="container_2_text" class="graphs_text"></div>
+				<div id="container_3" class="graphs"></div>
+				<div id="container_3_text" class="graphs_text"></div>
+				<div id="container_4" class="graphs"></div>
+				<div id="container_4_text" class="graphs_text"></div>
+				</div>
+				
+			</div>
+		</div>
+	</div>
+
+</body>
+</html>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		initSearch("${mainpath}", onSearch);
+		initTimePicker();
+		initBuildingSearch();
+	});
+</script>
